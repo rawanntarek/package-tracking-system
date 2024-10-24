@@ -32,9 +32,15 @@ input[type="email"] {
 }
 label{
     text-align: left;  /* Align text to the left */
-    margin-right: 10px; /* Add space between label and input */
+    margin-right: 20px; /* Add space between label and input */
     width: 150px;      /* Set a fixed width (optional) */
     display: inline-block; /* Allows the width to take effect */
+}
+.inline-label,
+.inline-link {
+  display: inline;
+  margin-top: 20px;
+  margin-right: 5px; /* Adjust spacing as needed */
 }
 button{
     color: white;

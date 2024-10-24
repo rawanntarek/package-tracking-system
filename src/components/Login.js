@@ -21,7 +21,6 @@ const Login = () => {
 
                 if (response.ok) {
                     alert("Login Successful");
-                    navigate("/Home"); // Change to your desired path after login
                 } else {
                     const errorData = await response.json();
                     alert(errorData.message);
