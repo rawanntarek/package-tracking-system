@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
 import './Registration.css';
+import { useNavigate } from 'react-router-dom';
 
 const Registration = () => {
     const [Name, setName] = useState('');
     const [Email, setEmail] = useState('');
     const [Phone, setPhone] = useState('');
     const [Password, setPassword] = useState('');
-    const [message, setMessage] = useState('');
-
+    const Navigate=useNavigate();
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (Name && Email && Phone && Password) {
@@ -21,19 +21,18 @@ const Registration = () => {
                 });
 
                 if (response.ok) {
-                    const data = await response.json();
-                    setMessage(data.message); // Show success message
-                    // Optionally clear the form or redirect to login
-                } else {
+                    alert("User Registered Successfully");
+                    Navigate("/Login")
+                }
+                else {
                     const errorData = await response.json();
-                    setMessage(errorData.message); // Show error message
+                    alert(errorData)
                 }
             } catch (error) {
-                console.error('Error:', error);
-                setMessage('An error occurred while registering. Please try again.');
+                alert('An error occurred while registering. Please try again.')
             }
         } else {
-            setMessage("Please fill all fields");
+            alert("Please fill all fields");
         }
     };
 
@@ -66,7 +65,6 @@ const Registration = () => {
                         <button type="submit">Register</button>
                     </div>
                 </form>
-                {message && <p>{message}</p>} {/* Display message to user */}
             </center>
         </div>
     );
