@@ -5,17 +5,36 @@ const Registration = () => {
     const [Email,setEmail]=useState('');
     const [Phone,setPhone]=useState('');
     const [Password,setPassword]=useState('');
-    const handleSubmit = (e) => {
+    const[message,setMessage]=useState('');
+    const handleSubmit = async (e) => {
         e.preventDefault();
         if (Name && Email && Phone && Password)
         {
-            console.log("Registered")
-            setName('');
-            setEmail('');
-            setPhone('');
-            setPassword('');
-
-
+            const userDetails={name:Name,email:Email,phone:Phone,password:Password}
+            try{
+                const response=await fetch('http://localhost:8080/register',{
+                    method:'POST',
+                    headers:{
+                        'content-Type':'application/json',
+                    },
+                    body: JSON.stringify(userDetails),
+                });
+                if (!response.ok)
+                {
+                    const errorData=await response.json();
+                    setMessage(errorData.error);
+                    return;
+                }
+                const data = await response.json();
+                setMessage(data.message);
+                setName('');
+                setEmail('');
+                setPhone('');
+                setPassword('');
+            }catch(error)
+            {
+                setMessage("An error occurred while registering");
+            }
         }
         else{
             alert("please fill all fields")
