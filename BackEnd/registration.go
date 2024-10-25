@@ -61,7 +61,10 @@ func UserRegisteration(w http.ResponseWriter, r *http.Request) {
 		ErrorResponse(w, "Invalid input", http.StatusBadRequest)
 		return
 	}
-
+	if user.Email == "" || user.Password == "" || user.Name == "" || user.Phone == "" {
+		ErrorResponse(w, "fields are required", http.StatusBadRequest)
+		return
+	}
 	// Insert the user data into MongoDB
 	collection := client.Database("Package_Tracking_System").Collection("Registered Users")
 	_, err = collection.InsertOne(context.TODO(), user)
@@ -115,6 +118,9 @@ func UserLogin(w http.ResponseWriter, r *http.Request) {
 	} else if err != nil {
 		ErrorResponse(w, "Error checking credentials", http.StatusInternalServerError)
 		return
+	} else if err != mongo.ErrNoDocuments {
+		ErrorResponse(w, "User Logged in Successfully", http.StatusOK)
+
 	}
 
 }

@@ -29,7 +29,7 @@ const Registration = () => {
                     alert(errorData)
                 }
             } catch (error) {
-                alert('An error occurred while registering. Please try again.')
+                alert('User Not Found')
             }
         } else {
             alert("Please fill all fields");
