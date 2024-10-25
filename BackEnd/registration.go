@@ -16,10 +16,10 @@ import (
 
 // UserData Struct
 type UserData struct {
-	Name     string `json:"name"`
-	Email    string `json:"email"`
-	Phone    string `json:"phone"`
-	Password string `json:"password"`
+	Name     string json:"name"
+	Email    string json:"email"
+	Phone    string json:"phone"
+	Password string json:"password"
 }
 
 // Global MongoDB client
@@ -67,6 +67,15 @@ func UserRegisteration(w http.ResponseWriter, r *http.Request) {
 	}
 	// Insert the user data into MongoDB
 	collection := client.Database("Package_Tracking_System").Collection("Registered Users")
+	filter := bson.M{"email": user.Email}
+
+	// Attempt to find the user
+	var ExistingUser UserData
+	err = collection.FindOne(context.TODO(), filter).Decode(&ExistingUser)
+	if err == nil {
+		ErrorResponse(w, "user Already Registered", http.StatusUnauthorized)
+		return
+	}
 	_, err = collection.InsertOne(context.TODO(), user)
 	if err != nil {
 		ErrorResponse(w, "Error saving user to the database", http.StatusInternalServerError)
