@@ -1,11 +1,16 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
 	"log"
 	"net/http"
+	"time"
+
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 // UserData Struct
@@ -15,6 +20,9 @@ type UserData struct {
 	Phone    string `json:"phone"`
 	Password string `json:"password"`
 }
+
+// Global MongoDB client
+var client *mongo.Client
 
 // ErrorResponse sends an error message to the client.
 func ErrorResponse(w http.ResponseWriter, message string, statusCode int) {
@@ -77,6 +85,14 @@ func UserRegisteration(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Insert the user data into MongoDB
+	collection := client.Database("Package_Tracking_System").Collection("Registered Users")
+	_, err = collection.InsertOne(context.TODO(), user)
+	if err != nil {
+		ErrorResponse(w, "Error saving user to the database", http.StatusInternalServerError)
+		return
+	}
+
 	// Respond with success message
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(map[string]string{
@@ -86,10 +102,38 @@ func UserRegisteration(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-	const port = ":3000" // Define port for server
+	// MongoDB URI
+	uri := "mongodb+srv://roaaayman2112:1234@cluster0.66yq8.mongodb.net/Package_Tracking_System?retryWrites=true&w=majority"
+	clientOptions := options.Client().ApplyURI(uri)
 
+	// Connect to MongoDB
+	var err error
+	client, err = mongo.Connect(context.TODO(), clientOptions)
+	if err != nil {
+		log.Fatal("Connection Error:", err)
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	// Check the connection
+	if err := client.Ping(ctx, nil); err != nil {
+		log.Fatal("Ping Error:", err)
+	}
+	fmt.Println("Connected to MongoDB!")
+
+	// Start the HTTP server
+	const port = ":3000" // Define port for server
 	http.HandleFunc("/register", UserRegisteration)
 
 	fmt.Printf("Server is running on port %s\n", port)
 	log.Fatal(http.ListenAndServe(port, nil)) // Start the server and log fatal errors
+
+	// Disconnect from MongoDB on server shutdown
+	defer func() {
+		if err := client.Disconnect(ctx); err != nil {
+			log.Fatal("Disconnect Error:", err)
+		}
+		fmt.Println("Disconnected from MongoDB.")
+	}()
 }
