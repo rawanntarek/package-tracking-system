@@ -36,23 +36,6 @@ func enableCORS(w http.ResponseWriter) {
 	w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS") // Include OPTIONS for preflight requests
 }
 
-// UserValidation checks if all required fields are filled.
-func UserValidation(user UserData) (bool, string) {
-	if user.Name == "" {
-		return false, "name"
-	}
-	if user.Email == "" {
-		return false, "email"
-	}
-	if user.Phone == "" {
-		return false, "phone"
-	}
-	if user.Password == "" {
-		return false, "password"
-	}
-	return true, ""
-}
-
 // UserRegisteration handles the user registration process.
 func UserRegisteration(w http.ResponseWriter, r *http.Request) {
 	enableCORS(w) // Enable CORS for the request
@@ -75,13 +58,6 @@ func UserRegisteration(w http.ResponseWriter, r *http.Request) {
 	err = json.Unmarshal(body, &user)
 	if err != nil {
 		ErrorResponse(w, "Invalid input", http.StatusBadRequest)
-		return
-	}
-
-	// Validate user data
-	valid, missingField := UserValidation(user)
-	if !valid {
-		ErrorResponse(w, fmt.Sprintf("Field '%s' is required", missingField), http.StatusBadRequest)
 		return
 	}
 
@@ -115,12 +91,6 @@ func main() {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-
-	// Check the connection
-	if err := client.Ping(ctx, nil); err != nil {
-		log.Fatal("Ping Error:", err)
-	}
-	fmt.Println("Connected to MongoDB!")
 
 	// Start the HTTP server
 	const port = ":3000" // Define port for server
