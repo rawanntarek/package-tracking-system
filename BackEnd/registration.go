@@ -70,12 +70,6 @@ func UserRegisteration(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Respond with success message
-	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(map[string]string{
-		"message": fmt.Sprintf("User '%s' registered successfully!", user.Name),
-		"user":    user.Email,
-	})
 }
 
 func UserLogin(w http.ResponseWriter, r *http.Request) {
@@ -117,11 +111,6 @@ func UserLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Successful login response
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(map[string]string{
-		"message": "Logged in successfully!",
-		"user":    foundUser.Email})
 }
 
 func main() {
