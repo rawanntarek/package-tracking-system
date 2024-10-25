@@ -1,11 +1,17 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
 	"log"
 	"net/http"
+	"time"
+
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 // UserData Struct
@@ -16,30 +22,32 @@ type UserData struct {
 	Password string `json:"password"`
 }
 
+// Global MongoDB client
+var client *mongo.Client
+
 // ErrorResponse sends an error message to the client.
 func ErrorResponse(w http.ResponseWriter, message string, statusCode int) {
 	http.Error(w, message, statusCode)
 }
 
-// UserValidation checks if all required fields are filled.
-func UserValidation(user UserData) (bool, string) {
-	if user.Name == "" {
-		return false, "name"
-	}
-	if user.Email == "" {
-		return false, "email"
-	}
-	if user.Phone == "" {
-		return false, "phone"
-	}
-	if user.Password == "" {
-		return false, "password"
-	}
-	return true, ""
+// CORS middleware to handle cross-origin requests
+func enableCORS(w http.ResponseWriter) {
+	w.Header().Set("Access-Control-Allow-Origin", "*") // Allow all origins (be cautious in production)
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+	w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS") // Include OPTIONS for preflight requests
 }
 
 // UserRegisteration handles the user registration process.
 func UserRegisteration(w http.ResponseWriter, r *http.Request) {
+	enableCORS(w) // Enable CORS for the request
+
+	if r.Method == http.MethodOptions {
+		return // Handle preflight request
+	}
+
+	// Log the incoming request method and URL
+	log.Printf("Received %s request for %s", r.Method, r.URL.Path)
+
 	var user UserData
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
@@ -47,31 +55,107 @@ func UserRegisteration(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Unmarshal the JSON body into UserData struct
+	err = json.Unmarshal(body, &user)
+	if err != nil {
+		ErrorResponse(w, "Invalid input", http.StatusBadRequest)
+		return
+	}
+	if user.Email == "" || user.Password == "" || user.Name == "" || user.Phone == "" {
+		ErrorResponse(w, "fields are required", http.StatusBadRequest)
+		return
+	}
+	// Insert the user data into MongoDB
+	collection := client.Database("Package_Tracking_System").Collection("Registered Users")
+	_, err = collection.InsertOne(context.TODO(), user)
+	if err != nil {
+		ErrorResponse(w, "Error saving user to the database", http.StatusInternalServerError)
+		return
+	} else {
+		ErrorResponse(w, "User Registered Successfully", http.StatusOK)
+
+	}
+
+}
+
+func UserLogin(w http.ResponseWriter, r *http.Request) {
+	enableCORS(w) // Enable CORS for the request
+
+	if r.Method == http.MethodOptions {
+		return // Handle preflight request
+	}
+
+	// Log the incoming request method and URL
+	log.Printf("Received %s request for %s", r.Method, r.URL.Path)
+	// Read the incoming request
+	var user UserData
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		ErrorResponse(w, "Error reading input", http.StatusInternalServerError)
+		return
+	}
+
+	// Unmarshal JSON body into UserData struct
 	err = json.Unmarshal(body, &user)
 	if err != nil {
 		ErrorResponse(w, "Invalid input", http.StatusBadRequest)
 		return
 	}
 
-	valid, missingField := UserValidation(user)
-	if !valid {
-		ErrorResponse(w, fmt.Sprintf("Field '%s' is required", missingField), http.StatusBadRequest)
+	// Check if email and password are provided
+	if user.Email == "" || user.Password == "" {
+		ErrorResponse(w, "Email and password are required", http.StatusBadRequest)
 		return
 	}
 
-	// Respond with success message
-	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(map[string]string{
-		"message": "User'%user.name registered successfully!",
-		"user":    user.Email,
-	})
+	// Query MongoDB to check if user exists with the provided email and password
+	collection := client.Database("Package_Tracking_System").Collection("Registered Users")
+	filter := bson.M{"email": user.Email, "password": user.Password}
+
+	// Attempt to find the user
+	var foundUser UserData
+	err = collection.FindOne(context.TODO(), filter).Decode(&foundUser)
+	if err == mongo.ErrNoDocuments {
+		ErrorResponse(w, "Invalid email or password", http.StatusUnauthorized)
+		return
+	} else if err != nil {
+		ErrorResponse(w, "Error checking credentials", http.StatusInternalServerError)
+		return
+	} else if err != mongo.ErrNoDocuments {
+		ErrorResponse(w, "User Logged in Successfully", http.StatusOK)
+
+	}
+
 }
 
 func main() {
-	const port = ":8080"
+	// MongoDB URI
+	uri := "mongodb+srv://roaaayman2112:1234@cluster0.66yq8.mongodb.net/Package_Tracking_System?retryWrites=true&w=majority"
+	clientOptions := options.Client().ApplyURI(uri)
 
+	// Connect to MongoDB
+	var err error
+	client, err = mongo.Connect(context.TODO(), clientOptions)
+	if err != nil {
+		log.Fatal("Connection Error:", err)
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	// Start the HTTP server
+	const port = ":3000" // Define port for server
 	http.HandleFunc("/register", UserRegisteration)
+	http.HandleFunc("/login", UserLogin)
 
 	fmt.Printf("Server is running on port %s\n", port)
-	log.Fatal(http.ListenAndServe(port, nil))
+	log.Fatal(http.ListenAndServe(port, nil)) // Start the server and log fatal errors
+
+	// Disconnect from MongoDB on server shutdown
+	defer func() {
+		if err := client.Disconnect(ctx); err != nil {
+			log.Fatal("Disconnect Error:", err)
+		}
+		fmt.Println("Disconnected from MongoDB.")
+	}()
 }
