@@ -22,8 +22,8 @@ const Login = () => {
                 if (response.ok) {
                     alert("Login Successful");
                 } else {
-                    const errorData = await response.json();
-                    alert(errorData.message);
+                    const errorData = await response.text();
+                    alert(errorData);
                 }
             } catch (error) {
                 alert('User Not Found.');

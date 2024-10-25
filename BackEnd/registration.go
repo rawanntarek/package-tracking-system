@@ -71,6 +71,9 @@ func UserRegisteration(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		ErrorResponse(w, "Error saving user to the database", http.StatusInternalServerError)
 		return
+	} else {
+		ErrorResponse(w, "User Registered Successfully", http.StatusOK)
+
 	}
 
 }
