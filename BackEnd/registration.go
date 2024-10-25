@@ -75,6 +75,12 @@ func UserRegisteration(w http.ResponseWriter, r *http.Request) {
 func UserLogin(w http.ResponseWriter, r *http.Request) {
 	enableCORS(w) // Enable CORS for the request
 
+	if r.Method == http.MethodOptions {
+		return // Handle preflight request
+	}
+
+	// Log the incoming request method and URL
+	log.Printf("Received %s request for %s", r.Method, r.URL.Path)
 	// Read the incoming request
 	var user UserData
 	body, err := io.ReadAll(r.Body)
