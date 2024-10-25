@@ -77,6 +77,53 @@ func UserRegisteration(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+func UserLogin(w http.ResponseWriter, r *http.Request) {
+    enableCORS(w) // Enable CORS for the request
+
+    // Read the incoming request
+    var user UserData
+    body, err := io.ReadAll(r.Body)
+    if err != nil {
+        ErrorResponse(w, "Error reading input", http.StatusInternalServerError)
+        return
+    }
+
+    // Unmarshal JSON body into UserData struct
+    err = json.Unmarshal(body, &user)
+    if err != nil {
+        ErrorResponse(w, "Invalid input", http.StatusBadRequest)
+        return
+    }
+
+    // Check if email and password are provided
+    if user.Email == "" || user.Password == "" {
+        ErrorResponse(w, "Email and password are required", http.StatusBadRequest)
+        return
+    }
+
+    // Query MongoDB to check if user exists with the provided email and password
+    collection := client.Database("Package_Tracking_System").Collection("Registered Users")
+    filter := bson.M{"email": user.Email, "password": user.Password}
+
+    // Attempt to find the user
+    var foundUser UserData
+    err = collection.FindOne(context.TODO(), filter).Decode(&foundUser)
+    if err == mongo.ErrNoDocuments {
+        ErrorResponse(w, "Invalid email or password", http.StatusUnauthorized)
+        return
+    } else if err != nil {
+        ErrorResponse(w, "Error checking credentials", http.StatusInternalServerError)
+        return
+    }
+
+    // Successful login response
+    w.WriteHeader(http.StatusOK)
+    json.NewEncoder(w).Encode(map[string]string{
+        "message": "Logged in successfully!",
+        "user":    foundUser.Email,
+    })
+}
+
 func main() {
 	// MongoDB URI
 	uri := "mongodb+srv://roaaayman2112:1234@cluster0.66yq8.mongodb.net/Package_Tracking_System?retryWrites=true&w=majority"
@@ -95,6 +142,7 @@ func main() {
 	// Start the HTTP server
 	const port = ":3000" // Define port for server
 	http.HandleFunc("/register", UserRegisteration)
+	http.HandleFunc("/login", UserLogin)
 
 	fmt.Printf("Server is running on port %s\n", port)
 	log.Fatal(http.ListenAndServe(port, nil)) // Start the server and log fatal errors
