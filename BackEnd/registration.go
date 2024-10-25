@@ -16,10 +16,10 @@ import (
 
 // UserData Struct
 type UserData struct {
-	Name     string json:"name"
-	Email    string json:"email"
-	Phone    string json:"phone"
-	Password string json:"password"
+	Name     string `json:"name"`
+	Email    string `json:"email"`
+	Phone    string `json:"phone"`
+	Password string `json:"password"`
 }
 
 // Global MongoDB client
@@ -76,6 +76,7 @@ func UserRegisteration(w http.ResponseWriter, r *http.Request) {
 		ErrorResponse(w, "user Already Registered", http.StatusUnauthorized)
 		return
 	}
+
 	_, err = collection.InsertOne(context.TODO(), user)
 	if err != nil {
 		ErrorResponse(w, "Error saving user to the database", http.StatusInternalServerError)
