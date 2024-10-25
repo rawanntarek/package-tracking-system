@@ -26,7 +26,7 @@ const Login = () => {
                     alert(errorData.message);
                 }
             } catch (error) {
-                alert('An error occurred while logging in. Please try again.');
+                alert('User Not Found.');
             }
         } else {
             alert("Please fill all fields");
