@@ -25,7 +25,7 @@ const Registration = () => {
                     Navigate("/Login")
                 }
                 else {
-                    const errorData = await response.json();
+                    const errorData = await response.text();
                     alert(errorData)
                 }
             } catch (error) {

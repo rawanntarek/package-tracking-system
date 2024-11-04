@@ -61,26 +61,42 @@ func UserRegisteration(w http.ResponseWriter, r *http.Request) {
 		ErrorResponse(w, "Invalid input", http.StatusBadRequest)
 		return
 	}
-
+	if user.Email == "" || user.Password == "" || user.Name == "" || user.Phone == "" {
+		ErrorResponse(w, "fields are required", http.StatusBadRequest)
+		return
+	}
 	// Insert the user data into MongoDB
 	collection := client.Database("Package_Tracking_System").Collection("Registered Users")
+	filter := bson.M{"email": user.Email}
+
+	// Attempt to find the user
+	var ExistingUser UserData
+	err = collection.FindOne(context.TODO(), filter).Decode(&ExistingUser)
+	if err == nil {
+		ErrorResponse(w, "user Already Registered", http.StatusUnauthorized)
+		return
+	}
+
 	_, err = collection.InsertOne(context.TODO(), user)
 	if err != nil {
 		ErrorResponse(w, "Error saving user to the database", http.StatusInternalServerError)
 		return
+	} else {
+		ErrorResponse(w, "User Registered Successfully", http.StatusOK)
+
 	}
 
-	// Respond with success message
-	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(map[string]string{
-		"message": fmt.Sprintf("User '%s' registered successfully!", user.Name),
-		"user":    user.Email,
-	})
 }
 
 func UserLogin(w http.ResponseWriter, r *http.Request) {
 	enableCORS(w) // Enable CORS for the request
 
+	if r.Method == http.MethodOptions {
+		return // Handle preflight request
+	}
+
+	// Log the incoming request method and URL
+	log.Printf("Received %s request for %s", r.Method, r.URL.Path)
 	// Read the incoming request
 	var user UserData
 	body, err := io.ReadAll(r.Body)
@@ -115,13 +131,11 @@ func UserLogin(w http.ResponseWriter, r *http.Request) {
 	} else if err != nil {
 		ErrorResponse(w, "Error checking credentials", http.StatusInternalServerError)
 		return
+	} else if err != mongo.ErrNoDocuments {
+		ErrorResponse(w, "User Logged in Successfully", http.StatusOK)
+
 	}
 
-	// Successful login response
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(map[string]string{
-		"message": "Logged in successfully!",
-		"user":    foundUser.Email})
 }
 
 func main() {
