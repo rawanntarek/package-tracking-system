@@ -1,115 +1,64 @@
-import React, { useState, useEffect } from 'react';
-import './ListOfOrders.css';  // Assuming your CSS is in the same folder
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from "react";
 
-const ListOfOrders = () => {
-    const [orders, setOrders] = useState([]);
-    const [selectedOrder, setSelectedOrder] = useState(null);
-    const navigate = useNavigate();
-    const userEmail = localStorage.getItem('userEmail');
+const UserOrders = () => {
+  const [orders, setOrders] = useState([]);
 
-    useEffect(() => {
-        if (!userEmail) {
-            navigate("/login");
-            return;
-        }
+  const fetchOrders = async () => {
+    try {
+      const email = localStorage.getItem("userEmail");
+      console.log("Email:", email); // Log email to check if it's retrieved correctly
+      if (!email) {
+        alert("Email is required");
+        return;
+      }
 
-        const fetchOrders = async () => {
-            try {
-                const response = await fetch("http://localhost:3000/getuserorders", {
-                    method: "GET",
-                    headers: {
-                        "email": userEmail,  // Match backend header
-                    },
-                });
+      const response = await fetch("http://localhost:3000/getuserorders", {
+        method: "GET",
+        headers: {
+          "email": email,
+        },
+      });
 
-                if (!response.ok) {
-                    throw new Error('Failed to fetch orders');
-                }
+      console.log("Response status:", response.status); // Log response status
+      if (!response.ok) {
+        throw new Error("Failed to fetch orders");
+      }
 
-                const data = await response.json();
-
-                if (Array.isArray(data) && data.length === 0) {
-                    setOrders([]); // No orders found
-                } else {
-                    const ordersWithStringId = data.map(order => ({
-                        ...order,
-                        _id: order._id, // Convert ObjectId to string
-                    }));
-                    setOrders(ordersWithStringId);
-                    setSelectedOrder(ordersWithStringId[0] || null); // Automatically select the first order if available
-                }
-            } catch (error) {
-                console.error("Error fetching orders:", error);
-            }
-        };
-
-        fetchOrders();
-    }, [userEmail, navigate]);
-
-    const handleOrderClick = (orderId) => {
-        const order = orders.find((order) => order._id === orderId);
-        setSelectedOrder(order);
-    };
-
-    const handleGoBack = () => {
-        setSelectedOrder(null);
-    };
-
-    const renderOrderDetailsForm = () => {
-        if (!selectedOrder) return null;
-
-        return (
-            <form className="order-details-form">
-                <h3>Order Details</h3>
-                <div>
-                    <label><strong>Order ID:</strong></label>
-                    <input type="text" value={selectedOrder._id} disabled />
-                </div>
-                <div>
-                    <label><strong>Package Details:</strong></label>
-                    <textarea value={selectedOrder.packageDetails} disabled />
-                </div>
-                <div>
-                    <button type="button" onClick={handleGoBack}>Back to Orders</button>
-                </div>
-            </form>
-        );
-    };
-
-    let orderListContent;
-    if (orders.length > 0) {
-        orderListContent = (
-            <ul className="order-list">
-                {orders.map((order) => (
-                    <li key={order._id} onClick={() => handleOrderClick(order._id)} className="order-item">
-                        Order ID: {order._id} - {order.packageDetails || "No Details"}
-                    </li>
-                ))}
-            </ul>
-        );
-    } else {
-        orderListContent = <p>No orders found</p>;
+      const data = await response.json();
+      console.log("Data:", data); // Log the response data
+      setOrders(data);
+    } catch (error) {
+      alert(error.message);
+      console.log("Error:", error); // Log error message
     }
+  };
 
-    return (
-        <div>
-            <main>
-                <center>
-                    <h2>Package Tracking System</h2>
-                    <h2>Your Orders</h2>
-                </center>
-            </main>
-            <center>
-                <form>
-                    <label>Orders</label>
-                    <div className="orders-list">
-                        {selectedOrder ? renderOrderDetailsForm() : orderListContent}
-                    </div>
-                </form>
-            </center>
-        </div>
-    );
+  useEffect(() => {
+    fetchOrders();
+  }, []);
+
+  return (
+    <div>
+      <header>
+        <h1>User Orders</h1>
+      </header>
+      <div>
+        <ul>
+          {orders.map((order, index) => (
+            <form>
+            <li key={index}>
+              
+                <p>Order {index + 1}: {order.id}</p>
+                <p>Status: {order.status}</p>
+                <button>View Order Details</button>
+              
+            </li>
+            </form>
+          ))}
+        </ul>
+      </div>
+    </div>
+  );
 };
 
-export default ListOfOrders;
+export default UserOrders;
