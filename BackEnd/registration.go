@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -24,11 +25,13 @@ type UserData struct {
 }
 
 type Order struct {
-	PickupLocation  string `json:"pickupLocation"`
-	DropOffLocation string `json:"dropOffLocation"`
-	PackageDetails  string `json:"packageDetails"`
-	DeliveryTime    string `json:"deliveryTime"`
-	UserEmail       string `json:"userEmail"`
+	ID              primitive.ObjectID `bson:"_id,omitempty" json:"id"`
+	PickupLocation  string             `json:"pickupLocation"`
+	DropOffLocation string             `json:"dropOffLocation"`
+	PackageDetails  string             `json:"packageDetails"`
+	DeliveryTime    string             `json:"deliveryTime"`
+	UserEmail       string             `json:"userEmail"`
+	Status          string             `json:"status"`
 }
 
 // Global MongoDB client
@@ -42,8 +45,8 @@ func ErrorResponse(w http.ResponseWriter, message string, statusCode int) {
 // CORS middleware to handle cross-origin requests
 func enableCORS(w http.ResponseWriter) {
 	w.Header().Set("Access-Control-Allow-Origin", "*") // Allow all origins (be cautious in production)
-	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
-	w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS") // Include OPTIONS for preflight requests
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, email")
+	w.Header().Set("Access-Control-Allow-Methods", "GET ,POST, OPTIONS") // Include OPTIONS for preflight requests
 }
 
 // UserRegisteration handles the user registration process.
@@ -181,15 +184,15 @@ func CreateOrder(w http.ResponseWriter, r *http.Request) {
 		ErrorResponse(w, "All fields are required", http.StatusBadRequest)
 		return
 	}
-
+	order.Status = "pending"
 	// Insert the order into the database
 	collection := client.Database("Package_Tracking_System").Collection("Orders")
-	_, err = collection.InsertOne(context.TODO(), order)
+	result, err := collection.InsertOne(context.TODO(), order)
 	if err != nil {
 		ErrorResponse(w, "Error saving order to the database", http.StatusInternalServerError)
 		return
 	}
-
+	order.ID = result.InsertedID.(primitive.ObjectID)
 	// Respond with a success message
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("Order Created Successfully"))
@@ -197,6 +200,11 @@ func CreateOrder(w http.ResponseWriter, r *http.Request) {
 
 func GetUserOrders(w http.ResponseWriter, r *http.Request) {
 	enableCORS(w)
+
+	if r.Method == http.MethodOptions {
+		w.WriteHeader(http.StatusOK)
+		return
+	}
 
 	email := r.Header.Get("email")
 
@@ -221,6 +229,7 @@ func GetUserOrders(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Error processing orders", http.StatusInternalServerError)
 		return
 	}
+
 	if len(orders) == 0 {
 		w.WriteHeader(http.StatusOK) // No orders found
 		w.Write([]byte("[]"))
