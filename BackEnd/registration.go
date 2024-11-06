@@ -16,10 +16,11 @@ import (
 
 // UserData Struct
 type UserData struct {
-	Name     string `json:"name"`
-	Email    string `json:"email"`
-	Phone    string `json:"phone"`
-	Password string `json:"password"`
+	Name       string `json:"name"`
+	Email      string `json:"email"`
+	Phone      string `json:"phone"`
+	Password   string `json:"password"`
+	TypeOfUser string `json:"TypeOfUser"`
 }
 
 type Order struct {
@@ -69,7 +70,7 @@ func UserRegisteration(w http.ResponseWriter, r *http.Request) {
 		ErrorResponse(w, "Invalid input", http.StatusBadRequest)
 		return
 	}
-	if user.Email == "" || user.Password == "" || user.Name == "" || user.Phone == "" {
+	if user.Email == "" || user.Password == "" || user.Name == "" || user.Phone == "" || user.TypeOfUser == "" {
 		ErrorResponse(w, "fields are required", http.StatusBadRequest)
 		return
 	}
