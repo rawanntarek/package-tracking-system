@@ -20,8 +20,6 @@ function App() {
         <Route path="/manageorders" element={<ManageOrders />} />
         <Route path="/adminDashboard" element={<AdminDashboard />} />
         <Route path="/assignorders" element={<AssignOrders />} />
-        
-        {/* Add the Courier Dashboard route */}
         <Route path="/CourierDashboard" element={<CourierDashboard />} /> {/* Courier Dashboard route */}
       </Routes>
     </Router>
