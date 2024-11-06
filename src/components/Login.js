@@ -27,7 +27,8 @@ const Login = () => {
 
                     // Save the user's email and role in local storage
                     localStorage.setItem('userEmail', Email);
-                    localStorage.setItem('userRole', data.role);  // Store the user role
+                    localStorage.setItem('userRole', data.role);  
+                    localStorage.setItem('courierID', data.id);// Store the user role
 
                     // Navigate based on the user role
                     if (data.role === 'Admin') {

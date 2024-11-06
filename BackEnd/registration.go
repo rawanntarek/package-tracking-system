@@ -32,6 +32,7 @@ type Order struct {
 	DeliveryTime    string             `json:"deliveryTime"`
 	UserEmail       string             `json:"userEmail"`
 	Status          string             `json:"status"`
+	CourierID       string             `json:"courierID,omitempty"`
 }
 
 
@@ -264,7 +265,6 @@ func GetAllOrders(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(orders)
 }
 
-
 func main() {
 	// MongoDB URI
 	uri := "mongodb+srv://roaaayman2112:1234@cluster0.66yq8.mongodb.net/Package_Tracking_System?retryWrites=true&w=majority"
@@ -287,6 +287,7 @@ func main() {
 	http.HandleFunc("/createorder", CreateOrder)
 	http.HandleFunc("/getuserorders", GetUserOrders)
 	http.HandleFunc("/getallorders", GetAllOrders)
+	
 	
 
 
