@@ -22,6 +22,14 @@ type UserData struct {
 	Password string `json:"password"`
 }
 
+type Order struct {
+	PickupLocation  string `json:"pickupLocation"`
+	DropOffLocation string `json:"dropOffLocation"`
+	PackageDetails  string `json:"packageDetails"`
+	DeliveryTime    string `json:"deliveryTime"`
+	UserEmail       string `json:"userEmail"`
+}
+
 // Global MongoDB client
 var client *mongo.Client
 
@@ -138,6 +146,48 @@ func UserLogin(w http.ResponseWriter, r *http.Request) {
 
 }
 
+func CreateOrder(w http.ResponseWriter, r *http.Request) {
+	enableCORS(w)
+
+	if r.Method == http.MethodOptions {
+		return // Handle preflight request
+	}
+
+	log.Printf("Received %s request for %s", r.Method, r.URL.Path)
+
+	var order Order
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		ErrorResponse(w, "Error reading input", http.StatusInternalServerError)
+		return
+	}
+
+	// Unmarshal the request body into the Order struct
+	err = json.Unmarshal(body, &order)
+	if err != nil {
+		ErrorResponse(w, "Invalid input", http.StatusBadRequest)
+		return
+	}
+
+	// Check if all required fields are provided
+	if order.PickupLocation == "" || order.DropOffLocation == "" || order.PackageDetails == "" || order.DeliveryTime == "" || order.UserEmail == "" {
+		ErrorResponse(w, "All fields are required", http.StatusBadRequest)
+		return
+	}
+
+	// Insert the order into the database
+	collection := client.Database("Package_Tracking_System").Collection("Orders")
+	_, err = collection.InsertOne(context.TODO(), order)
+	if err != nil {
+		ErrorResponse(w, "Error saving order to the database", http.StatusInternalServerError)
+		return
+	}
+
+	// Respond with a success message
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("Order Created Successfully"))
+}
+
 func main() {
 	// MongoDB URI
 	uri := "mongodb+srv://roaaayman2112:1234@cluster0.66yq8.mongodb.net/Package_Tracking_System?retryWrites=true&w=majority"
@@ -157,6 +207,7 @@ func main() {
 	const port = ":3000" // Define port for server
 	http.HandleFunc("/register", UserRegisteration)
 	http.HandleFunc("/login", UserLogin)
+	http.HandleFunc("/createorder", CreateOrder)
 
 	fmt.Printf("Server is running on port %s\n", port)
 	log.Fatal(http.ListenAndServe(port, nil)) // Start the server and log fatal errors
