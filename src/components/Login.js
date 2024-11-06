@@ -31,7 +31,7 @@ const Login = () => {
 
                     // Navigate based on the user role
                     if (data.role === 'Admin') {
-                        navigate("/ManageOrders"); // Example for admin
+                        navigate("/AdminDashBoard"); // Example for admin
                     } else if (data.role === 'courier') {
                         navigate("/courierDashboard"); // Example for courier
                     } else {

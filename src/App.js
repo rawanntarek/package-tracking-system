@@ -4,7 +4,10 @@ import Login from './components/Login';
 import Registration from './components/Registration';
 import ListOfOrders from './components/ListOfOrders';
 import CreateOrder from './components/CreateOrder';
-import ManageOrders from './components/ManageOrders'; // Import ManageOrders component
+import ManageOrders from './components/ManageOrders';
+import AdminDashboard from './components/AdminDashboard';
+import AssignOrders from './components/assignorders'; // Note the correct component name
+
 
 function App() {
   return (
@@ -14,7 +17,9 @@ function App() {
         <Route path="/ListOfOrders" element={<ListOfOrders />} />
         <Route path="/" element={<Registration />} />
         <Route path="/createorder" element={<CreateOrder />} />
-        <Route path="/manageorders" element={<ManageOrders />} />  {/* Add route for ManageOrders */}
+        <Route path="/manageorders" element={<ManageOrders />} />
+        <Route path="/adminDashboard" element={<AdminDashboard />} /> {/* Admin Dashboard route */}
+        <Route path="/assignorders" element={<AssignOrders />} />
       </Routes>
     </Router>
   );
