@@ -32,7 +32,7 @@ const Login = () => {
                     // Navigate based on the user role
                     if (data.role === 'Admin') {
                         navigate("/AdminDashboard"); // Example for admin
-                    } else if (data.role === 'courier') {
+                    } else if (data.role === 'Courier') {
                         navigate("/courierDashboard"); // Example for courier
                     } else {
                         navigate("/CreateOrder"); // Default user role dashboard
