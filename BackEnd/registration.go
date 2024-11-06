@@ -17,11 +17,12 @@ import (
 
 // UserData Struct
 type UserData struct {
-	Name         string `json:"name"`
-	Email        string `json:"email"`
-	Phone        string `json:"phone"`
-	Password     string `json:"password"`
-	Type_of_user string `json:"Type_of_user"`
+	ID           primitive.ObjectID `bson:"_id,omitempty" json:"userid"`
+	Name         string             `json:"name"`
+	Email        string             `json:"email"`
+	Phone        string             `json:"phone"`
+	Password     string             `json:"password"`
+	Type_of_user string             `json:"Type_of_user"`
 }
 
 type Order struct {
@@ -46,7 +47,7 @@ func ErrorResponse(w http.ResponseWriter, message string, statusCode int) {
 // CORS middleware to handle cross-origin requests
 func enableCORS(w http.ResponseWriter) {
 	w.Header().Set("Access-Control-Allow-Origin", "*") // Allow all origins (be cautious in production)
-	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, email,id")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, email,id,orderID,courierID")
 	w.Header().Set("Access-Control-Allow-Methods", "DELETE,GET ,POST, OPTIONS") // Include OPTIONS for preflight requests
 }
 
@@ -330,6 +331,84 @@ func CancelOrder(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("Order deleted successfully"))
 }
+func AcceptOrder(w http.ResponseWriter, r *http.Request) {
+	enableCORS(w)
+
+	// Handle preflight request
+	if r.Method == http.MethodOptions {
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+
+	// Retrieve order ID and courier ID from headers
+	orderID := r.Header.Get("orderID")
+	courierID := r.Header.Get("courierID")
+	if orderID == "" || courierID == "" {
+		http.Error(w, "Order ID and Courier ID are required", http.StatusBadRequest)
+		return
+	}
+
+	// Parse the order ID to MongoDB ObjectID format
+	oid, err := primitive.ObjectIDFromHex(orderID)
+	if err != nil {
+		http.Error(w, "Invalid Order ID format", http.StatusBadRequest)
+		return
+	}
+
+	// Access the Orders collection in the database
+	collection := client.Database("Package_Tracking_System").Collection("Orders")
+	filter := bson.M{"_id": oid}
+	update := bson.M{"$set": bson.M{"courierID": courierID, "status": "accepted"}}
+
+	// Attempt to update the order document
+	result, err := collection.UpdateOne(context.TODO(), filter, update)
+	if err != nil {
+		log.Printf("Error updating order: %v", err)
+		http.Error(w, "Failed to accept order", http.StatusInternalServerError)
+		return
+	}
+
+	// Check if the order document was found and updated
+	if result.MatchedCount == 0 {
+		http.Error(w, "Order not found", http.StatusNotFound)
+		return
+	}
+
+	// Send success response
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("Order accepted successfully"))
+}
+
+func DeclineOrder(w http.ResponseWriter, r *http.Request) {
+	enableCORS(w)
+
+	if r.Method == http.MethodOptions {
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+
+	orderID := r.URL.Query().Get("orderID")
+	if orderID == "" {
+		http.Error(w, "Order ID is required", http.StatusBadRequest)
+		return
+	}
+
+	oid, err := primitive.ObjectIDFromHex(orderID)
+	if err != nil {
+		http.Error(w, "Invalid Order ID", http.StatusBadRequest)
+		return
+	}
+
+	collection := client.Database("Package_Tracking_System").Collection("Orders")
+	_, err = collection.DeleteOne(context.TODO(), bson.M{"_id": oid})
+	if err != nil {
+		http.Error(w, "Failed to decline order", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("Order declined successfully"))
+}
 
 func main() {
 	// MongoDB URI
@@ -356,6 +435,8 @@ func main() {
 
 	http.HandleFunc("/getorder", GetOrderById)
 	http.HandleFunc("/cancelorder", CancelOrder)
+	http.HandleFunc("/acceptorder", AcceptOrder)
+	http.HandleFunc("/declineorder", DeclineOrder)
 
 	fmt.Printf("Server is running on port %s\n", port)
 	log.Fatal(http.ListenAndServe(port, nil)) // Start the server and log fatal errors

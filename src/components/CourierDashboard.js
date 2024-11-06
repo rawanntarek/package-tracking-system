@@ -28,18 +28,15 @@ function CourierDashboard() {
   // Handle Accept Order
   const acceptOrder = async (orderID) => {
     const courierID = localStorage.getItem('courierID'); // Get courier's ID from localStorage
-
-  
+    
     try {
       const response = await fetch('http://localhost:3000/acceptorder', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json', // Make sure to send the correct content type
+          'Content-Type': 'application/json', // Set content type
+          'orderID': orderID,                // Send orderID in the headers
+          'courierID': courierID,            // Send courierID in the headers
         },
-        body: JSON.stringify({
-          orderID: orderID,
-          courierID: courierID, // Send the courier's ID along with the order ID
-        }),
       });
   
       if (response.ok) {
@@ -47,6 +44,8 @@ function CourierDashboard() {
         // Refresh the orders list after accepting
         const updatedOrders = orders.filter((order) => order.id !== orderID);
         setOrders(updatedOrders);
+      } else if (response.status === 404) {
+        alert('Order not found');
       } else {
         console.error('Failed to accept the order');
       }
@@ -54,6 +53,7 @@ function CourierDashboard() {
       console.error('Error accepting order:', error);
     }
   };
+  
   
 //d/d/d
   // Handle Decline Order
@@ -78,18 +78,26 @@ function CourierDashboard() {
 
   return (
     <div className="orders-list">
-      <h3>Orders</h3>
+      <center>
+      <header>
+      <h1>Orders</h1>
+      </header>
+      </center>
       {orders.length > 0 ? (
         <ul className="order-list">
           {orders.map((order) => (
+            <form>
             <li key={order.id} className="order-item">
+              
               <div><strong>Order ID:</strong> {order.id}</div> {/* Display Order ID */}
               <div><strong>Package Details:</strong> {order.packageDetails}</div>
               <div>
                 <strong>Pickup Location:</strong> {order.pickupLocation}<br />
                 <strong>Drop-off Location:</strong> {order.dropOffLocation}<br />
-                <strong>Delivery Time:</strong> {order.deliveryTime}
+                <strong>Delivery Time:</strong> {order.deliveryTime}<br/>
+                <strong>Status:</strong> {order.status}
               </div>
+              
               <div className="buttons">
                 <button
                   className="accept-btn"
@@ -103,8 +111,11 @@ function CourierDashboard() {
                 >
                   Decline
                 </button>
+                
               </div>
+              
             </li>
+            </form>
           ))}
         </ul>
       ) : (

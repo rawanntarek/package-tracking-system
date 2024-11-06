@@ -4,7 +4,14 @@
     margin: 0 auto;
     text-align: center;
 }
-
+header {
+    color: rgb(4, 6, 50);
+    font-size: x-large;
+    font-weight: bolder;
+    font-family: 'Courier New', Courier, monospace;
+    padding: 0px 0;
+    margin-left: 5px;
+}
 .order-list {
     list-style-type: none;
     padding: 0;
@@ -18,21 +25,6 @@
     border: 1px solid #ddd;
 }
 
-.status {
-    font-weight: bold;
-}
-
-.status.pending {
-    color: orange;
-}
-
-.status.accepted {
-    color: green;
-}
-
-.status.declined {
-    color: red;
-}
 
 button {
     padding: 8px 12px;
