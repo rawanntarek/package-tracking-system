@@ -32,6 +32,7 @@ type Order struct {
 	DeliveryTime    string             `json:"deliveryTime"`
 	UserEmail       string             `json:"userEmail"`
 	Status          string             `json:"status"`
+	CourierID       string             `json:"courierID,omitempty"`
 }
 
 // Global MongoDB client
