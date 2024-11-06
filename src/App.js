@@ -4,6 +4,10 @@ import Login from './components/Login';
 import Registration from './components/Registration';
 import ListOfOrders from './components/ListOfOrders';
 import CreateOrder from './components/CreateOrder';
+import ManageOrders from './components/ManageOrders';
+import AdminDashboard from './components/AdminDashboard';
+import AssignOrders from './components/assignorders'; // Note the correct component name
+import CourierDashboard from './components/CourierDashboard'; // Import the CourierDashboard component
 import ManageOrders from './components/ManageOrders'; // Import ManageOrders component
 import OrderDetails from './components/OrderDetails';
 
@@ -12,9 +16,15 @@ function App() {
     <Router>
       <Routes>
         <Route path="/login" element={<Login />} />
-        <Route path="/ListOfOrders" element={<ListOfOrders />} />
+        <Route path="/list-of-orders" element={<ListOfOrders />} />
         <Route path="/" element={<Registration />} />
         <Route path="/createorder" element={<CreateOrder />} />
+        <Route path="/manageorders" element={<ManageOrders />} />
+        <Route path="/adminDashboard" element={<AdminDashboard />} />
+        <Route path="/assignorders" element={<AssignOrders />} />
+        
+        {/* Add the Courier Dashboard route */}
+        <Route path="/CourierDashboard" element={<CourierDashboard />} /> {/* Courier Dashboard route */}
         <Route path="/manageorders" element={<ManageOrders />} />  {/* Add route for ManageOrders */}
         <Route path="/OrderDetails/:id" element={<OrderDetails />}/>
       </Routes>

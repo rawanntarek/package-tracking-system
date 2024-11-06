@@ -238,6 +238,30 @@ func GetUserOrders(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(orders)
 }
+func GetAllOrders(w http.ResponseWriter, r *http.Request) {
+	enableCORS(w)
+
+	log.Printf("Received %s request for %s", r.Method, r.URL.Path)
+
+	collection := client.Database("Package_Tracking_System").Collection("Orders")
+
+	// Fetch all orders without any filter
+	cursor, err := collection.Find(context.TODO(), bson.M{})
+	if err != nil {
+		http.Error(w, "Failed to fetch orders", http.StatusInternalServerError)
+		return
+	}
+
+	var orders []Order
+	if err := cursor.All(context.TODO(), &orders); err != nil {
+		http.Error(w, "Error processing orders", http.StatusInternalServerError)
+		return
+	}
+
+	// Send the orders as a JSON response
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(orders)
+}
 
 // Function to handle getting an order by ID
 func GetOrderById(w http.ResponseWriter, r *http.Request) {
@@ -327,6 +351,8 @@ func main() {
 	http.HandleFunc("/login", UserLogin)
 	http.HandleFunc("/createorder", CreateOrder)
 	http.HandleFunc("/getuserorders", GetUserOrders)
+	http.HandleFunc("/getallorders", GetAllOrders)
+
 	http.HandleFunc("/getorder", GetOrderById)
 	http.HandleFunc("/cancelorder", CancelOrder)
 

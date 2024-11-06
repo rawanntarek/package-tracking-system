@@ -1,0 +1,53 @@
+.courier-dashboard {
+    padding: 20px;
+    max-width: 800px;
+    margin: 0 auto;
+    text-align: center;
+}
+
+.order-list {
+    list-style-type: none;
+    padding: 0;
+}
+
+.order-item {
+    background-color: #f9f9f9;
+    margin: 10px 0;
+    padding: 10px;
+    border-radius: 8px;
+    border: 1px solid #ddd;
+}
+
+.status {
+    font-weight: bold;
+}
+
+.status.pending {
+    color: orange;
+}
+
+.status.accepted {
+    color: green;
+}
+
+.status.declined {
+    color: red;
+}
+
+button {
+    padding: 8px 12px;
+    margin: 5px;
+    border: none;
+    cursor: pointer;
+    border-radius: 4px;
+}
+
+.accept-btn {
+    background-color: green;
+    color: white;
+}
+
+.decline-btn {
+    background-color: red;
+    color: white;
+}
