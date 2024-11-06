@@ -32,6 +32,7 @@ type Order struct {
 	UserEmail       string `json:"userEmail"`
 }
 
+
 // Global MongoDB client
 var client *mongo.Client
 
@@ -44,7 +45,7 @@ func ErrorResponse(w http.ResponseWriter, message string, statusCode int) {
 func enableCORS(w http.ResponseWriter) {
 	w.Header().Set("Access-Control-Allow-Origin", "*") // Allow all origins (be cautious in production)
 	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
-	w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS") // Include OPTIONS for preflight requests
+	w.Header().Set("Access-Control-Allow-Methods", "POST,GET, OPTIONS") // Include OPTIONS for preflight requests
 }
 
 // UserRegisteration handles the user registration process.
@@ -153,6 +154,49 @@ func UserLogin(w http.ResponseWriter, r *http.Request) {
     w.WriteHeader(http.StatusOK)
     _ = json.NewEncoder(w).Encode(responseData) // Send the response body
 }
+// FetchOrders retrieves all orders from the database
+func FetchOrders(w http.ResponseWriter, r *http.Request) {
+    enableCORS(w) // Enable CORS for the request
+
+    if r.Method == http.MethodOptions {
+        return // Handle preflight request
+    }
+
+    log.Printf("Received %s request for %s", r.Method, r.URL.Path)
+
+    // Connect to the "Orders" collection in the database
+    collection := client.Database("Package_Tracking_System").Collection("Orders")
+
+    // Retrieve all documents from the Orders collection
+    cursor, err := collection.Find(context.TODO(), bson.M{})
+    if err != nil {
+        ErrorResponse(w, "Error fetching orders", http.StatusInternalServerError)
+        return
+    }
+    defer cursor.Close(context.TODO())
+
+    // Iterate over the cursor and decode each document into an Order struct
+    var orders []Order
+    for cursor.Next(context.TODO()) {
+        var order Order
+        if err := cursor.Decode(&order); err != nil {
+            ErrorResponse(w, "Error decoding order data", http.StatusInternalServerError)
+            return
+        }
+        orders = append(orders, order)
+    }
+
+    // Check for any errors encountered during iteration
+    if err := cursor.Err(); err != nil {
+        ErrorResponse(w, "Error iterating through orders", http.StatusInternalServerError)
+        return
+    }
+
+    // Send the orders as JSON response
+    w.Header().Set("Content-Type", "application/json")
+    w.WriteHeader(http.StatusOK)
+    json.NewEncoder(w).Encode(orders)
+}
 
 
 func CreateOrder(w http.ResponseWriter, r *http.Request) {
@@ -217,6 +261,10 @@ func main() {
 	http.HandleFunc("/register", UserRegisteration)
 	http.HandleFunc("/login", UserLogin)
 	http.HandleFunc("/createorder", CreateOrder)
+	http.HandleFunc("/fetchorders", FetchOrders)
+
+	
+
 
 	fmt.Printf("Server is running on port %s\n", port)
 	log.Fatal(http.ListenAndServe(port, nil)) // Start the server and log fatal errors
