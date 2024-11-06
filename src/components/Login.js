@@ -9,7 +9,7 @@ const Login = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        
+
         if (Email && Password) {
             try {
                 const response = await fetch('http://localhost:3000/login', {
@@ -24,14 +24,14 @@ const Login = () => {
 
                 if (response.ok) {
                     alert(data.message);  // Show the success message from the server
-                    
+
                     // Save the user's email and role in local storage
                     localStorage.setItem('userEmail', Email);
                     localStorage.setItem('userRole', data.role);  // Store the user role
 
                     // Navigate based on the user role
                     if (data.role === 'Admin') {
-                        navigate("/ManageOrders"); // Example for admin
+                        navigate("/AdminDashboard"); // Example for admin
                     } else if (data.role === 'courier') {
                         navigate("/courierDashboard"); // Example for courier
                     } else {
@@ -64,22 +64,10 @@ const Login = () => {
                 <form onSubmit={handleSubmit}>
                     <div>
                         <label>Email:</label>
-                        <input 
-                            type="email" 
-                            placeholder="Enter Email" 
-                            value={Email} 
-                            required 
-                            onChange={(e) => setEmail(e.target.value)} 
-                        />
+                        <input type="email" placeholder='Enter Email' value={Email} required onChange={(e) => setEmail(e.target.value)} />
                         <br />
                         <label>Password:</label>
-                        <input 
-                            type="password" 
-                            placeholder="Enter Password" 
-                            value={Password} 
-                            required 
-                            onChange={(e) => setPassword(e.target.value)} 
-                        />
+                        <input type="password" placeholder='Enter Password' value={Password} required onChange={(e) => setPassword(e.target.value)} />
                         <br />
                         <button type="submit">Login</button>
                     </div>
