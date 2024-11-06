@@ -50,6 +50,10 @@ const OrderDetails = () => {
     }
   };
 
+  if (!order) {
+    return <div>Loading...</div>;
+  }
+
   return (
     <div>
       <header><h1>Order Details</h1></header>
