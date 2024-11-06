@@ -11,6 +11,7 @@ const Order = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        const userEmail = localStorage.getItem('userEmail');
 
         if (pickupLocation && dropOffLocation && packageDetails && deliveryTime) {
             try {
@@ -19,7 +20,7 @@ const Order = () => {
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({ pickupLocation, dropOffLocation, packageDetails, deliveryTime , userEmail }),
+                    body: JSON.stringify({ pickupLocation, dropOffLocation, packageDetails, deliveryTime,userEmail }),
                 });
 
                 if (response.ok) {
