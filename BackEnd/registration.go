@@ -21,6 +21,7 @@ type UserData struct {
 	Phone        string `json:"phone"`
 	Password     string `json:"password"`
 	Type_of_user string `json:"Type_of_user"`
+
 }
 
 type Order struct {
@@ -98,54 +99,61 @@ func UserRegisteration(w http.ResponseWriter, r *http.Request) {
 }
 
 func UserLogin(w http.ResponseWriter, r *http.Request) {
-	enableCORS(w) // Enable CORS for the request
+    enableCORS(w) // Enable CORS for the request
 
-	if r.Method == http.MethodOptions {
-		return // Handle preflight request
-	}
+    if r.Method == http.MethodOptions {
+        return // Handle preflight request
+    }
 
-	// Log the incoming request method and URL
-	log.Printf("Received %s request for %s", r.Method, r.URL.Path)
+    // Log the incoming request method and URL
+    log.Printf("Received %s request for %s", r.Method, r.URL.Path)
 	// Read the incoming request
-	var user UserData
-	body, err := io.ReadAll(r.Body)
-	if err != nil {
-		ErrorResponse(w, "Error reading input", http.StatusInternalServerError)
-		return
-	}
+    var user UserData
+    body, err := io.ReadAll(r.Body)
+    if err != nil {
+        ErrorResponse(w, "Error reading input", http.StatusInternalServerError)
+        return
+    }
 
-	// Unmarshal JSON body into UserData struct
-	err = json.Unmarshal(body, &user)
-	if err != nil {
-		ErrorResponse(w, "Invalid input", http.StatusBadRequest)
-		return
-	}
+    // Unmarshal JSON body into UserData struct
+    err = json.Unmarshal(body, &user)
+    if err != nil {
+        ErrorResponse(w, "Invalid input", http.StatusBadRequest)
+        return
+    }
 
-	// Check if email and password are provided
-	if user.Email == "" || user.Password == "" {
-		ErrorResponse(w, "Email and password are required", http.StatusBadRequest)
-		return
-	}
+    // Check if email and password are provided
+    if user.Email == "" || user.Password == "" {
+        ErrorResponse(w, "Email and password are required", http.StatusBadRequest)
+        return
+    }
 
-	// Query MongoDB to check if user exists with the provided email and password
-	collection := client.Database("Package_Tracking_System").Collection("Registered Users")
-	filter := bson.M{"email": user.Email, "password": user.Password}
+    // Query MongoDB to check if user exists with the provided email and password
+    collection := client.Database("Package_Tracking_System").Collection("Registered Users")
+    filter := bson.M{"email": user.Email, "password": user.Password}
 
-	// Attempt to find the user
-	var foundUser UserData
-	err = collection.FindOne(context.TODO(), filter).Decode(&foundUser)
-	if err == mongo.ErrNoDocuments {
-		ErrorResponse(w, "Invalid email or password", http.StatusUnauthorized)
-		return
-	} else if err != nil {
-		ErrorResponse(w, "Error checking credentials", http.StatusInternalServerError)
-		return
-	} else if err != mongo.ErrNoDocuments {
-		ErrorResponse(w, "User Logged in Successfully", http.StatusOK)
+    // Attempt to find the user
+    var foundUser UserData
+    err = collection.FindOne(context.TODO(), filter).Decode(&foundUser)
+    if err == mongo.ErrNoDocuments {
+        ErrorResponse(w, "Invalid email or password", http.StatusUnauthorized)
+        return
+    } else if err != nil {
+        ErrorResponse(w, "Error checking credentials", http.StatusInternalServerError)
+        return
+    }
 
-	}
+    // Create response data with the user role
+    responseData := map[string]interface{}{
+        "message": "User logged in successfully",
+        "role":    foundUser.Type_of_user, // Send the role of the user
+    }
 
+    // Set the response status to OK (only once)
+    w.WriteHeader(http.StatusOK)
+    _ = json.NewEncoder(w).Encode(responseData) // Send the response body
 }
+
 
 func CreateOrder(w http.ResponseWriter, r *http.Request) {
 	enableCORS(w)
