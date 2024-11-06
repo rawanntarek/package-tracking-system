@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import './CreateOrder.css';
 import { useNavigate } from 'react-router-dom';
 
+
 const Order = () => {
     const [pickupLocation, setPickupLocation] = useState('');
     const [dropOffLocation, setDropOffLocation] = useState('');
@@ -25,7 +26,7 @@ const Order = () => {
 
                 if (response.ok) {
                     alert("Order Created Successfully");
-                    navigate("/OrdersList");  
+                    navigate("/ListOfOrders");  
                 } else {
                     const errorData = await response.text();
                     alert(errorData);  
