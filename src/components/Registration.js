@@ -13,6 +13,7 @@ const Registration = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        
         if (Name && Email && Phone && Password && Type_of_user) {
             try {
                 const response = await fetch('http://localhost:3000/register', {

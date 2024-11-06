@@ -9,6 +9,7 @@ const Login = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        
         if (Email && Password) {
             try {
                 const response = await fetch('http://localhost:3000/login', {
@@ -21,6 +22,9 @@ const Login = () => {
 
                 if (response.ok) {
                     alert("Login Successful");
+                    // Save the user's email in local storage
+                    localStorage.setItem('userEmail', Email);
+                    navigate("/CreateOrder"); 
                 } else {
                     const errorData = await response.text();
                     alert(errorData);
