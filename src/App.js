@@ -5,6 +5,7 @@ import Registration from './components/Registration';
 import ListOfOrders from './components/ListOfOrders';
 import CreateOrder from './components/CreateOrder';
 import ManageOrders from './components/ManageOrders'; // Import ManageOrders component
+import OrderDetails from './components/OrderDetails';
 
 function App() {
   return (
@@ -15,6 +16,7 @@ function App() {
         <Route path="/" element={<Registration />} />
         <Route path="/createorder" element={<CreateOrder />} />
         <Route path="/manageorders" element={<ManageOrders />} />  {/* Add route for ManageOrders */}
+        <Route path="/OrderDetails/:id" element={<OrderDetails />}/>
       </Routes>
     </Router>
   );
