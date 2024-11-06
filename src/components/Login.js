@@ -20,20 +20,31 @@ const Login = () => {
                     body: JSON.stringify({ email: Email, password: Password }),
                 });
 
+                const data = await response.json();  // Parse the response
+
                 if (response.ok) {
-                    alert("Login Successful");
-                    // Save the user's email in local storage
+                    alert(data.message);  // Show the success message from the server
+                    
+                    // Save the user's email and role in local storage
                     localStorage.setItem('userEmail', Email);
-                    navigate("/CreateOrder"); 
+                    localStorage.setItem('userRole', data.role);  // Store the user role
+
+                    // Navigate based on the user role
+                    if (data.role === 'Admin') {
+                        navigate("/ManageOrders"); // Example for admin
+                    } else if (data.role === 'courier') {
+                        navigate("/courierDashboard"); // Example for courier
+                    } else {
+                        navigate("/CreateOrder"); // Default user role dashboard
+                    }
                 } else {
-                    const errorData = await response.text();
-                    alert(errorData);
+                    alert(data.message || "Login failed");  // Show the error message if login failed
                 }
             } catch (error) {
-                alert('User Not Found.');
+                alert('An error occurred. Please try again later.');
             }
         } else {
-            alert("Please fill all fields");
+            alert("Please fill in all fields.");
         }
     };
 
@@ -53,10 +64,22 @@ const Login = () => {
                 <form onSubmit={handleSubmit}>
                     <div>
                         <label>Email:</label>
-                        <input type="email" placeholder='Enter Email' value={Email} required onChange={(e) => setEmail(e.target.value)} />
+                        <input 
+                            type="email" 
+                            placeholder="Enter Email" 
+                            value={Email} 
+                            required 
+                            onChange={(e) => setEmail(e.target.value)} 
+                        />
                         <br />
                         <label>Password:</label>
-                        <input type="password" placeholder='Enter Password' value={Password} required onChange={(e) => setPassword(e.target.value)} />
+                        <input 
+                            type="password" 
+                            placeholder="Enter Password" 
+                            value={Password} 
+                            required 
+                            onChange={(e) => setPassword(e.target.value)} 
+                        />
                         <br />
                         <button type="submit">Login</button>
                     </div>
