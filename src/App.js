@@ -2,7 +2,6 @@ import React from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import Login from './components/Login';
 import Registration from './components/Registration';
-import ListOfOrders from './components/ListOfOrders';
 
 function App() {
   return (
@@ -11,6 +10,9 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/ListOfOrders" element={<ListOfOrders />} />
         <Route path="/" element={<Registration />} />
+
+        <Route path="/createorder" element={<CreateOrder />} />
+
       </Routes>
     </Router>
   );
