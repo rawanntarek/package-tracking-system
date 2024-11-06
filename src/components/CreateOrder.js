@@ -67,6 +67,8 @@ const Order = () => {
                         <label>Delivery Time:</label>
                         <input type="datetime-local" value={deliveryTime} required onChange={(e) => setDeliveryTime(e.target.value)} />
                         <br />
+                        <a href='/ListOfOrders'>list</a>
+                        <br/>
                         <button type="submit">Create Order</button>
                     </div>
                 </form>
