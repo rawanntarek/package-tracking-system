@@ -5,6 +5,7 @@ import "./OrderDetails.css";
 const OrderDetails = () => {
   const { id } = useParams();
   const [order, setOrder] = useState(null);
+  const [courier, setCourier] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -21,15 +22,37 @@ const OrderDetails = () => {
         }
         const data = await response.json();
         setOrder(data);
+        if (data.courierID) {
+          fetchCourierDetails(data.courierID);
+        }
       } catch (error) {
         console.error("Error:", error);
       }
     };
 
+
     fetchOrderDetails();
   }, [id]);
 
+  const fetchCourierDetails = async (courierID) => {
+    try {
+      const courierResponse = await fetch(`http://localhost:3000/getcourier?id=${courierID}`);
+      if (!courierResponse.ok) {
+        throw new Error("Failed to fetch courier details");
+      }
+      const courierData = await courierResponse.json();
+      setCourier(courierData);
+    } catch (error) {
+      console.error("Error:", error);
+    }
+  };
+
   const cancelOrder = async () => {
+    if (order.status !== "pending") {
+      alert("Order can only be cancelled if its status is 'pending'");
+      return;  
+    }
+
     try {
       const response = await fetch("http://localhost:3000/cancelorder", {
         method: "DELETE",
@@ -43,7 +66,7 @@ const OrderDetails = () => {
       }
 
       alert("Order cancelled successfully");
-      navigate("/ListOfOrders")
+      navigate("/ListOfOrders");
     } catch (error) {
       console.error("Error:", error);
       alert(error.message);
@@ -58,7 +81,7 @@ const OrderDetails = () => {
     <div>
       <header><h1>Order Details</h1></header>
       <form>
-        <div>
+      <div>
           <p><b>Order ID:</b> {order.id}</p>
           <p><b>Pickup Location:</b> {order.pickupLocation}</p>
           <p><b>Drop Off Location:</b> {order.dropOffLocation}</p>
@@ -88,8 +111,8 @@ const OrderDetails = () => {
 
           {order.status === 'pending' && (
             <button type="button" onClick={cancelOrder}>Cancel Order</button>
-          )}
-        </div>
+          )};
+        </div>       
       </form>
     </div>
   );

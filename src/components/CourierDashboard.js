@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 function CourierDashboard() {
-  const [orders, setOrders] = useState([]); // Initialize with an empty array
+  const [orders, setOrders] = useState([]);
+  const navigate = useNavigate();  // Hook for navigation
 
   useEffect(() => {
     async function fetchOrders() {
       try {
         const response = await fetch('http://localhost:3000/getallorders', {
-          method: 'GET'
+          method: 'GET',
         });
 
         if (response.ok) {
@@ -32,6 +34,7 @@ function CourierDashboard() {
       return;
     }
 
+
     try {
       const response = await fetch('http://localhost:3000/acceptorder', {
         method: 'POST',
@@ -42,8 +45,12 @@ function CourierDashboard() {
         },
       });
 
+
       if (response.ok) {
         alert('Order Accepted and Assigned to Courier');
+        // Navigate to the assigned page after accepting the order
+        navigate('/courierassignedorders'); // This will redirect to the '/assigned' route
+        // Optionally, you can also refresh the orders list after accepting
         const updatedOrders = orders.filter((order) => order.id !== orderID);
         setOrders(updatedOrders);
       } else if (response.status === 404) {
@@ -55,6 +62,8 @@ function CourierDashboard() {
       console.error('Error accepting order:', error);
     }
   };
+
+  // Handle Decline Order
 
   const declineOrder = async (orderID) => {
     const courierID = localStorage.getItem('courierID');
@@ -83,9 +92,9 @@ function CourierDashboard() {
   return (
     <div className="orders-list">
       <center>
-      <header>
-      <h1>Orders</h1>
-      </header>
+        <header>
+          <h1>Orders</h1>
+        </header>
       </center>
       {orders && orders.length > 0 ? (
         <ul>

@@ -1,0 +1,21 @@
+/* CourierAssignedOrders.css */
+h1 {
+    text-align: center;
+  }
+  
+  ul {
+    list-style-type: none;
+    padding: 0;
+  }
+  
+  li {
+    border: 1px solid #ddd;
+    padding: 15px;
+    margin: 10px;
+    background-color: #f9f9f9;
+  }
+  
+  strong {
+    font-weight: bold;
+  }
+  
