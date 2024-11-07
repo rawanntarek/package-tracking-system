@@ -38,6 +38,7 @@ type Order struct {
 	CourierPhone    string             `json:"courierPhone"`
 }
 
+
 // Global MongoDB client
 var client *mongo.Client
 
@@ -646,6 +647,33 @@ func ChangeStatus(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("Order status updated successfully"))
 }
+// GetAllCouriers - Fetches all users of type 'Courier' from the database
+func GetAllCouriers(w http.ResponseWriter, r *http.Request) {
+    enableCORS(w)
+
+    log.Printf("Received %s request for %s", r.Method, r.URL.Path)
+
+    // Access the MongoDB collection
+    collection := client.Database("Package_Tracking_System").Collection("Registered Users")
+
+    // Filter users where the 'Type_of_user' field is 'Courier'
+    cursor, err := collection.Find(context.TODO(), bson.M{"Type_of_user": "Courier"})
+    if err != nil {
+        http.Error(w, "Failed to fetch couriers", http.StatusInternalServerError)
+        return
+    }
+
+    var couriers []UserData
+    if err := cursor.All(context.TODO(), &couriers); err != nil {
+        http.Error(w, "Error processing couriers", http.StatusInternalServerError)
+        return
+    }
+
+    // Send the filtered couriers as a JSON response
+    w.Header().Set("Content-Type", "application/json")
+    json.NewEncoder(w).Encode(couriers)
+}
+
 
 func main() {
 	// MongoDB URI
@@ -678,6 +706,7 @@ func main() {
 	http.HandleFunc("/getassignedorders", GetAssignedOrdersForCourier)
 	http.HandleFunc("/updateorderstatus", UpdateOrderStatus)
 	http.HandleFunc("/ChangeStatus", ChangeStatus)
+	http.HandleFunc("/getAllCouriers", GetAllCouriers)
 	fmt.Printf("Server is running on port %s\n", port)
 	log.Fatal(http.ListenAndServe(port, nil)) // Start the server and log fatal errors
 
