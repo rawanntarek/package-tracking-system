@@ -590,6 +590,70 @@ func UpdateOrderStatus(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("Order status updated successfully"))
 }
+// ChangeStatus updates the status of an order
+func ChangeStatus(w http.ResponseWriter, r *http.Request) {
+	enableCORS(w)
+
+	// Check if it's an OPTIONS request (CORS pre-flight)
+	if r.Method == http.MethodOptions {
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+
+	// Only handle PUT requests here
+	if r.Method != http.MethodPut {
+		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Parse the request body into a struct
+	var requestData struct {
+		OrderID string `json:"id"`
+		Status  string `json:"status"`
+	}
+
+	// Decode the JSON request body
+	err := json.NewDecoder(r.Body).Decode(&requestData)
+	if err != nil {
+		http.Error(w, "Invalid JSON format", http.StatusBadRequest)
+		return
+	}
+
+	// Check if OrderID and Status are provided
+	if requestData.OrderID == "" || requestData.Status == "" {
+		http.Error(w, "Order ID and Status are required", http.StatusBadRequest)
+		return
+	}
+
+	// Convert the OrderID to MongoDB's ObjectID format
+	oid, err := primitive.ObjectIDFromHex(requestData.OrderID)
+	if err != nil {
+		http.Error(w, "Invalid Order ID format", http.StatusBadRequest)
+		return
+	}
+
+	// Access the Orders collection
+	collection := client.Database("Package_Tracking_System").Collection("Orders")
+
+	// Define the filter and update operations
+	filter := bson.M{"_id": oid}
+	update := bson.M{"$set": bson.M{"status": requestData.Status}}
+
+	// Execute the update operation in MongoDB
+	_, err = collection.UpdateOne(context.TODO(), filter, update)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			http.Error(w, "Order not found", http.StatusNotFound)
+		} else {
+			http.Error(w, "Failed to update order status", http.StatusInternalServerError)
+		}
+		return
+	}
+
+	// Respond with a success message
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("Order status updated successfully"))
+}
 
 func main() {
 	// MongoDB URI
@@ -621,7 +685,7 @@ func main() {
 	http.HandleFunc("/declineorder", DeclineOrder)
 	http.HandleFunc("/getassignedorders", GetAssignedOrdersForCourier)
 	http.HandleFunc("/updateorderstatus", UpdateOrderStatus)
-
+	http.HandleFunc("/ChangeStatus", ChangeStatus)
 	fmt.Printf("Server is running on port %s\n", port)
 	log.Fatal(http.ListenAndServe(port, nil)) // Start the server and log fatal errors
 

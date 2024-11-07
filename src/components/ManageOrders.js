@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import './ManageOrders.css';
 
 function ManageOrders() {
-  const [orders, setOrders] = useState([]); // Initialize with an empty array
+  const [orders, setOrders] = useState([]);
+  const [statusInputs, setStatusInputs] = useState({}); // Stores custom statuses for each order
 
   useEffect(() => {
     async function fetchOrders() {
@@ -14,15 +15,14 @@ function ManageOrders() {
 
         if (response.ok) {
           const data = await response.json();
-          setOrders(data||[]); // Set the fetched orders to state
+          setOrders(data || []);
         } else {
           console.error('Failed to fetch orders');
-          setOrders([])
+          setOrders([]);
         }
       } catch (error) {
         console.error('Error fetching orders:', error);
-        setOrders([])
-
+        setOrders([]);
       }
     }
 
@@ -49,6 +49,37 @@ function ManageOrders() {
     } catch (error) {
       console.error('Error deleting order:', error);
     }
+  };
+
+  const changeOrderStatus = async (orderId) => {
+    const newStatus = statusInputs[orderId] || ''; // Use the custom status input
+    try {
+      console.log(`Changing status of order with ID: ${orderId} to ${newStatus}`);
+      const response = await fetch('http://localhost:3000/ChangeStatus', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ id: orderId, status: newStatus }), // Send ID and status in JSON body
+      });
+
+      if (response.ok) {
+        console.log('Order status changed successfully');
+        setOrders(orders.map((order) =>
+          order.id === orderId ? { ...order, status: newStatus } : order
+        ));
+        setStatusInputs((prevInputs) => ({ ...prevInputs, [orderId]: '' })); // Clear the input after update
+      } else {
+        console.error('Failed to change order status:', await response.text());
+      }
+    } catch (error) {
+      console.error('Error changing order status:', error);
+    }
+  };
+
+
+  const handleStatusInputChange = (orderId, value) => {
+    setStatusInputs((prevInputs) => ({ ...prevInputs, [orderId]: value }));
   };
 
   return (
@@ -80,6 +111,13 @@ function ManageOrders() {
                 <td>{order.status}</td>
                 <td>
                   <button onClick={() => deleteOrder(order.id)}>Delete</button>
+                  <input
+                    type="text"
+                    placeholder="New Status"
+                    value={statusInputs[order.id] || ''}
+                    onChange={(e) => handleStatusInputChange(order.id, e.target.value)}
+                  />
+                  <button onClick={() => changeOrderStatus(order.id)}>Update Status</button>
                 </td>
               </tr>
             ))
