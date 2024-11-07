@@ -1,14 +1,16 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 function CourierDashboard() {
   const [orders, setOrders] = useState([]);
+  const navigate = useNavigate();  // Hook for navigation
 
   // Fetch all orders from the backend
   useEffect(() => {
     async function fetchOrders() {
       try {
         const response = await fetch('http://localhost:3000/getallorders', {
-          method: 'GET'
+          method: 'GET',
         });
 
         if (response.ok) {
@@ -34,7 +36,7 @@ function CourierDashboard() {
       alert('Courier ID not found in localStorage');
       return;
     }
-  
+
     try {
       const response = await fetch('http://localhost:3000/acceptorder', {
         method: 'POST',
@@ -44,10 +46,12 @@ function CourierDashboard() {
           'courierID': courierID,            // Send courierID in the headers
         },
       });
-  
+
       if (response.ok) {
         alert('Order Accepted and Assigned to Courier');
-        // Refresh the orders list after accepting
+        // Navigate to the assigned page after accepting the order
+        navigate('/courierassignedorders'); // This will redirect to the '/assigned' route
+        // Optionally, you can also refresh the orders list after accepting
         const updatedOrders = orders.filter((order) => order.id !== orderID);
         setOrders(updatedOrders);
       } else if (response.status === 404) {
@@ -59,14 +63,12 @@ function CourierDashboard() {
       console.error('Error accepting order:', error);
     }
   };
-  
-  
-//d/d/d
+
   // Handle Decline Order
   const declineOrder = async (orderID) => {
     try {
       const response = await fetch(`http://localhost:3000/declineorder?orderID=${orderID}`, {
-        method: 'POST'
+        method: 'POST',
       });
 
       if (response.ok) {
@@ -83,44 +85,34 @@ function CourierDashboard() {
   };
 
   return (
-    <div className="orders-list">
+    <div>
       <center>
-      <header>
-      <h1>Orders</h1>
-      </header>
+        <header>
+          <h1>Orders</h1>
+        </header>
       </center>
       {orders.length > 0 ? (
-        <ul className="order-list">
+        <ul>
           {orders.map((order) => (
-            <form>
-            <li key={order.id} className="order-item">
-              
-              <div><strong>Order ID:</strong> {order.id}</div> {/* Display Order ID */}
-              <div><strong>Package Details:</strong> {order.packageDetails}</div>
-              <div>
-                <strong>Pickup Location:</strong> {order.pickupLocation}<br />
-                <strong>Drop-off Location:</strong> {order.dropOffLocation}<br />
-                <strong>Delivery Time:</strong> {order.deliveryTime}<br/>
-                <strong>Status:</strong> {order.status}
-              </div>
-              
-              <div className="buttons">
-                <button
-                  className="accept-btn"
-                  onClick={() => acceptOrder(order.id)}
-                >
-                  Accept
-                </button>
-                <button
-                  className="decline-btn"
-                  onClick={() => declineOrder(order.id)}
-                >
-                  Decline
-                </button>
-                
-              </div>
-              
-            </li>
+            <form key={order.id}>
+              <li>
+                <div><strong>Order ID:</strong> {order.id}</div>
+                <div><strong>Package Details:</strong> {order.packageDetails}</div>
+                <div>
+                  <strong>Pickup Location:</strong> {order.pickupLocation}<br />
+                  <strong>Drop-off Location:</strong> {order.dropOffLocation}<br />
+                  <strong>Delivery Time:</strong> {order.deliveryTime}<br />
+                  <strong>Status:</strong> {order.status}
+                </div>
+                <div>
+                  <button onClick={(e) => { e.preventDefault(); acceptOrder(order.id); }}>
+                    Accept
+                  </button>
+                  <button onClick={(e) => { e.preventDefault(); declineOrder(order.id); }}>
+                    Decline
+                  </button>
+                </div>
+              </li>
             </form>
           ))}
         </ul>

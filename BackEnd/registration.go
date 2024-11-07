@@ -33,7 +33,9 @@ type Order struct {
 	DeliveryTime    string             `json:"deliveryTime"`
 	UserEmail       string             `json:"userEmail"`
 	Status          string             `json:"status"`
-	courierID       string             `json:"courierID"`
+	CourierID       string             `json:"courierID"`
+	CourierName     string             `json:"courierName"`
+	CourierPhone    string             `json:"courierPhone"`
 }
 
 // Global MongoDB client
@@ -149,9 +151,11 @@ func UserLogin(w http.ResponseWriter, r *http.Request) {
 
 	// Create response data with the user role
 	responseData := map[string]interface{}{
-		"message": "User logged in successfully",
-		"role":    foundUser.Type_of_user, // Send the role of the user
-		"userID":  foundUser.ID.Hex(),
+		"message":  "User logged in successfully",
+		"role":     foundUser.Type_of_user, // Send the role of the user
+		"userID":   foundUser.ID.Hex(),
+		"username": foundUser.Name,
+		"phone":    foundUser.Phone,
 	}
 
 	// Set the response status to OK (only once)
@@ -241,6 +245,7 @@ func GetUserOrders(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(orders)
 }
+
 func GetAllOrders(w http.ResponseWriter, r *http.Request) {
 	enableCORS(w)
 
@@ -355,51 +360,71 @@ func CancelOrder(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("Order canceled successfully"))
 }
+
 func AcceptOrder(w http.ResponseWriter, r *http.Request) {
 	enableCORS(w)
 
-	// Handle preflight request
 	if r.Method == http.MethodOptions {
 		w.WriteHeader(http.StatusOK)
 		return
 	}
 
-	// Retrieve order ID and courier ID from headers
 	orderID := r.Header.Get("orderID")
 	courierID := r.Header.Get("courierID")
-	log.Printf("Received orderID: %s, courierID: %s", orderID, courierID) // Add this line for debugging
 	if orderID == "" || courierID == "" {
 		http.Error(w, "Order ID and Courier ID are required", http.StatusBadRequest)
 		return
 	}
 
-	// Parse the order ID to MongoDB ObjectID format
-	oid, err := primitive.ObjectIDFromHex(orderID)
+	// Parse the order ID and courier ID to MongoDB ObjectID format
+	orderOID, err := primitive.ObjectIDFromHex(orderID)
 	if err != nil {
 		http.Error(w, "Invalid Order ID format", http.StatusBadRequest)
 		return
 	}
+	courierOID, err := primitive.ObjectIDFromHex(courierID)
+	if err != nil {
+		http.Error(w, "Invalid Courier ID format", http.StatusBadRequest)
+		return
+	}
 
-	// Access the Orders collection in the database
-	collection := client.Database("Package_Tracking_System").Collection("Orders")
-	filter := bson.M{"_id": oid}
-	update := bson.M{"$set": bson.M{"courierID": courierID, "status": "accepted"}}
+	// Fetch courier details from the database
+	courierCollection := client.Database("Package_Tracking_System").Collection("Registered Users")
+	var courier UserData
+	err = courierCollection.FindOne(context.TODO(), bson.M{"_id": courierOID}).Decode(&courier)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			http.Error(w, "Courier not found", http.StatusNotFound)
+		} else {
+			http.Error(w, "Failed to fetch courier details", http.StatusInternalServerError)
+		}
+		return
+	}
 
-	// Attempt to update the order document
-	result, err := collection.UpdateOne(context.TODO(), filter, update)
+	// Access the Orders collection and update the order document
+	orderCollection := client.Database("Package_Tracking_System").Collection("Orders")
+	filter := bson.M{"_id": orderOID}
+	update := bson.M{
+		"$set": bson.M{
+			"courierID":    courier.ID.Hex(),
+			"courierName":  courier.Name,
+			"courierPhone": courier.Phone,
+			"status":       "accepted",
+		},
+	}
+
+	result, err := orderCollection.UpdateOne(context.TODO(), filter, update)
 	if err != nil {
 		log.Printf("Error updating order: %v", err)
 		http.Error(w, "Failed to accept order", http.StatusInternalServerError)
 		return
 	}
 
-	// Check if the order document was found and updated
 	if result.MatchedCount == 0 {
 		http.Error(w, "Order not found", http.StatusNotFound)
 		return
 	}
 
-	// Send success response
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("Order accepted successfully"))
 }
@@ -425,7 +450,17 @@ func DeclineOrder(w http.ResponseWriter, r *http.Request) {
 	}
 
 	collection := client.Database("Package_Tracking_System").Collection("Orders")
-	_, err = collection.DeleteOne(context.TODO(), bson.M{"_id": oid})
+	filter := bson.M{"_id": oid}
+	update := bson.M{
+		"$set": bson.M{
+			"courierID":    "",
+			"courierName":  "",
+			"courierPhone": "",
+			"status":       "pending",
+		},
+	}
+
+	_, err = collection.UpdateOne(context.TODO(), filter, update)
 	if err != nil {
 		http.Error(w, "Failed to decline order", http.StatusInternalServerError)
 		return
@@ -433,6 +468,119 @@ func DeclineOrder(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("Order declined successfully"))
+}
+
+func GetAssignedOrdersForCourier(w http.ResponseWriter, r *http.Request) {
+	enableCORS(w)
+
+	if r.Method == http.MethodOptions {
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+
+	// Get the courier's ID from the request header
+	courierID := r.Header.Get("courierID")
+	if courierID == "" {
+		log.Println("Courier ID is missing from the header")
+		http.Error(w, "Courier ID is required", http.StatusBadRequest)
+		return
+	}
+	log.Printf("Received request for courier with ID: %s", courierID)
+
+	// Convert the courier ID to MongoDB ObjectID
+	courierOID, err := primitive.ObjectIDFromHex(courierID)
+	if err != nil {
+		log.Printf("Invalid Courier ID format: %v", err)
+		http.Error(w, "Invalid Courier ID", http.StatusBadRequest)
+		return
+	}
+
+	// Access the Orders collection in MongoDB
+	collection := client.Database("Package_Tracking_System").Collection("Orders")
+
+	// Filter orders by courierID
+	filter := bson.M{"courierID": courierOID}
+	cursor, err := collection.Find(context.TODO(), filter)
+	if err != nil {
+		log.Printf("MongoDB query error: %v", err)
+		http.Error(w, "Failed to fetch assigned orders", http.StatusInternalServerError)
+		return
+	}
+
+	var orders []Order
+	if err := cursor.All(context.TODO(), &orders); err != nil {
+		log.Printf("Error processing orders: %v", err)
+		http.Error(w, "Error processing orders", http.StatusInternalServerError)
+		return
+	}
+
+	if len(orders) == 0 {
+		w.WriteHeader(http.StatusOK) // No orders found
+		w.Write([]byte("[]"))
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(orders)
+}
+
+func UpdateOrderStatus(w http.ResponseWriter, r *http.Request) {
+	enableCORS(w)
+
+	if r.Method == http.MethodOptions {
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+
+	orderID := r.Header.Get("orderID")
+	if orderID == "" {
+		http.Error(w, "Order ID is required", http.StatusBadRequest)
+		return
+	}
+
+	// Convert the order ID into MongoDB ObjectID
+	oid, err := primitive.ObjectIDFromHex(orderID)
+	if err != nil {
+		http.Error(w, "Invalid Order ID", http.StatusBadRequest)
+		return
+	}
+
+	// Access the Orders collection
+	collection := client.Database("Package_Tracking_System").Collection("Orders")
+
+	// Check the current status of the order
+	var order Order
+	err = collection.FindOne(context.TODO(), bson.M{"_id": oid}).Decode(&order)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			http.Error(w, "Order not found", http.StatusNotFound)
+		} else {
+			http.Error(w, "Failed to fetch order", http.StatusInternalServerError)
+		}
+		return
+	}
+
+	// Only allow status update if the order is accepted
+	if order.Status != "accepted" {
+		http.Error(w, "Only accepted orders can be updated", http.StatusForbidden)
+		return
+	}
+
+	// Update the status to "delivered"
+	update := bson.M{
+		"$set": bson.M{
+			"status": "delivered",
+		},
+	}
+
+	_, err = collection.UpdateOne(context.TODO(), bson.M{"_id": oid}, update)
+	if err != nil {
+		http.Error(w, "Failed to update order status", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("Order marked as delivered"))
 }
 
 func main() {
