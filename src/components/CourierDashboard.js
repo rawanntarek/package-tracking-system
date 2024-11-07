@@ -83,19 +83,19 @@ function CourierDashboard() {
   };
 
   return (
-    <div className="orders-list">
+    <div>
       <center>
       <header>
       <h1>Orders</h1>
       </header>
       </center>
       {orders.length > 0 ? (
-        <ul className="order-list">
+        <ul>
           {orders.map((order) => (
             <form>
-            <li key={order.id} className="order-item">
+            <li key={order.id}>
               
-              <div><strong>Order ID:</strong> {order.id}</div> {/* Display Order ID */}
+              <div><strong>Order ID:</strong> {order.id}</div>
               <div><strong>Package Details:</strong> {order.packageDetails}</div>
               <div>
                 <strong>Pickup Location:</strong> {order.pickupLocation}<br />
@@ -104,15 +104,13 @@ function CourierDashboard() {
                 <strong>Status:</strong> {order.status}
               </div>
               
-              <div className="buttons">
+              <div>
                 <button
-                  className="accept-btn"
                   onClick={() => acceptOrder(order.id)}
                 >
                   Accept
                 </button>
                 <button
-                  className="decline-btn"
                   onClick={() => declineOrder(order.id)}
                 >
                   Decline
