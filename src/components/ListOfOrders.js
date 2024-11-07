@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import "./ListOfOrders.css"; // Import the CSS file
 
 const UserOrders = () => {
-  const { id } = useParams();
   const [orders, setOrders] = useState([]);
   const navigate = useNavigate();
 
@@ -18,7 +17,7 @@ const UserOrders = () => {
       const response = await fetch("http://localhost:3000/getuserorders", {
         method: "GET",
         headers: {
-          email: email,
+          "email": email,
         },
       });
 
@@ -41,33 +40,27 @@ const UserOrders = () => {
   const viewOrderDetails = (id) => {
     navigate(`/OrderDetails/${id}`);
   };
+
   return (
-    <div className="user-orders">
+    <div>
       <header>
         <h1>User Orders</h1>
       </header>
-      {orders.length === 0 ? (
-        <div className="no-orders">
-          <p>No orders found</p>
-        </div>
-      ) : (
-        <ul className="orders-list">
-          {orders.map((order, index) => (
-            <li key={order.id} className="order-item">
-              <p><b>Order {index + 1}:</b> {order.id}</p>
-              <p><b>Status:</b> {order.status}</p>
-              <button
-                type="button"
-                onClick={() => viewOrderDetails(order.id)}
-                className="view-details-button"
-              >
-                View Order Details
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
+      {orders.length === 0 ? (<form><center> <p>No orders found</p></center></form> ) :(
+      <ul>
+        {orders.map((order, index) => (
+        <form>
+          <li key={index}>
+            <p><b>Order {index + 1}: </b>{order.id}</p>
+            <p><b>Status: </b>{order.status}</p>
+            <button type="button" onClick={() => viewOrderDetails(order.id)}>
+              View Order Details
+            </button>
+          </li>
+          </form>
+        ))}
+      </ul>
+      )}</div>
   );
 };
 
