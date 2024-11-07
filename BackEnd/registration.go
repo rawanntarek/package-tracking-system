@@ -412,9 +412,11 @@ func DeclineOrder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	orderID := r.URL.Query().Get("orderID")
-	if orderID == "" {
-		http.Error(w, "Order ID is required", http.StatusBadRequest)
+	orderID := r.Header.Get("orderID")
+	courierID := r.Header.Get("courierID")
+
+	if orderID == "" || courierID == "" {
+		http.Error(w, "Order ID and Courier ID are required", http.StatusBadRequest)
 		return
 	}
 
