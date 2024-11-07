@@ -65,7 +65,7 @@ const OrderDetails = () => {
           <p><b>Package Details:</b> {order.packageDetails}</p>
           <p><b>Delivery Time:</b> {order.deliveryTime}</p>
           <p><b>Status:</b> {order.status}</p>
-          <p><b>Courier Info:</b> {order.courierInfo}</p>
+          <p><b>Courier Info:</b> {order.courierID}</p>
 
           {order.status === 'pending' && (
             <button type="button" onClick={cancelOrder}>Cancel Order</button>

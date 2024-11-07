@@ -33,7 +33,7 @@ type Order struct {
 	DeliveryTime    string             `json:"deliveryTime"`
 	UserEmail       string             `json:"userEmail"`
 	Status          string             `json:"status"`
-	CourierID       string             `json:"courierID,omitempty"`
+	courierID       string             `json:"courierID"`
 }
 
 // Global MongoDB client
@@ -151,6 +151,7 @@ func UserLogin(w http.ResponseWriter, r *http.Request) {
 	responseData := map[string]interface{}{
 		"message": "User logged in successfully",
 		"role":    foundUser.Type_of_user, // Send the role of the user
+		"userID":  foundUser.ID.Hex(),
 	}
 
 	// Set the response status to OK (only once)
@@ -343,6 +344,7 @@ func AcceptOrder(w http.ResponseWriter, r *http.Request) {
 	// Retrieve order ID and courier ID from headers
 	orderID := r.Header.Get("orderID")
 	courierID := r.Header.Get("courierID")
+	log.Printf("Received orderID: %s, courierID: %s", orderID, courierID) // Add this line for debugging
 	if orderID == "" || courierID == "" {
 		http.Error(w, "Order ID and Courier ID are required", http.StatusBadRequest)
 		return

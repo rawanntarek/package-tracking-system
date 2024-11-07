@@ -28,7 +28,13 @@ function CourierDashboard() {
   // Handle Accept Order
   const acceptOrder = async (orderID) => {
     const courierID = localStorage.getItem('courierID'); // Get courier's ID from localStorage
-    
+    console.log(localStorage.getItem('courierID'));
+
+    if (!courierID) {
+      alert('Courier ID not found in localStorage');
+      return;
+    }
+  
     try {
       const response = await fetch('http://localhost:3000/acceptorder', {
         method: 'POST',

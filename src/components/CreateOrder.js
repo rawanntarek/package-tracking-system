@@ -26,6 +26,7 @@ const Order = () => {
 
                 if (response.ok) {
                     alert("Order Created Successfully");
+                    
                     navigate("/ListOfOrders");  
                 } else {
                     const errorData = await response.text();
