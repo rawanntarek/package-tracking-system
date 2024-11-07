@@ -27,11 +27,35 @@ function ManageOrders() {
     fetchOrders();
   }, []);
 
-  const updateOrderStatus = (orderId) => {
+  const updateOrderStatus = async (orderId) => {
     const newStatus = prompt("Enter new status:");
-    setOrders(orders.map(order => 
-      order._id === orderId ? { ...order, status: newStatus || order.status } : order
-    ));
+  
+    // If the new status is empty, return without making the update
+    if (!newStatus) return;
+  
+    try {
+      const response = await fetch('http://localhost:3000/updateorderstatus', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          orderId: orderId,
+          status: newStatus, // Send the new status to the backend
+        }),
+      });
+  
+      if (response.ok) {
+        // If the request was successful, update the order status in the frontend state
+        setOrders(orders.map(order =>
+          order._id === orderId ? { ...order, status: newStatus } : order
+        ));
+      } else {
+        console.error("Failed to update order status:", await response.text());
+      }
+    } catch (error) {
+      console.error("Error updating order status:", error);
+    }
   };
 
   const deleteOrder = (orderId) => {
