@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 
 function CourierDashboard() {
   const [orders, setOrders] = useState([]);
-  const [orders, setOrders] = useState([]);
+ 
 
   // Fetch all orders from the backend
   useEffect(() => {
