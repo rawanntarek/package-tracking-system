@@ -310,19 +310,42 @@ func CancelOrder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Retrieve the order ID from the headers
 	orderID := r.Header.Get("id")
 	if orderID == "" {
 		http.Error(w, "Order ID is required", http.StatusBadRequest)
 		return
 	}
 
+	// Convert order ID to MongoDB ObjectID format
 	oid, err := primitive.ObjectIDFromHex(orderID)
 	if err != nil {
 		http.Error(w, "Invalid Order ID", http.StatusBadRequest)
 		return
 	}
 
+	// Access the Orders collection in the database
 	collection := client.Database("Package_Tracking_System").Collection("Orders")
+
+	// Find the order and check if it is still pending
+	var order Order
+	err = collection.FindOne(context.TODO(), bson.M{"_id": oid}).Decode(&order)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			http.Error(w, "Order not found", http.StatusNotFound)
+		} else {
+			http.Error(w, "Failed to fetch order", http.StatusInternalServerError)
+		}
+		return
+	}
+
+	// Check if the order is pending
+	if order.Status != "pending" {
+		http.Error(w, "Only pending orders can be canceled", http.StatusForbidden)
+		return
+	}
+
+	// Delete the order since it is pending
 	_, err = collection.DeleteOne(context.TODO(), bson.M{"_id": oid})
 	if err != nil {
 		http.Error(w, "Failed to delete order", http.StatusInternalServerError)
@@ -330,7 +353,7 @@ func CancelOrder(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("Order deleted successfully"))
+	w.Write([]byte("Order canceled successfully"))
 }
 func AcceptOrder(w http.ResponseWriter, r *http.Request) {
 	enableCORS(w)

@@ -30,6 +30,11 @@ const OrderDetails = () => {
   }, [id]);
 
   const cancelOrder = async () => {
+    if (order.status !== "pending") {
+      alert("Order can only be cancelled if its status is 'pending'");
+      return;  
+    }
+
     try {
       const response = await fetch("http://localhost:3000/cancelorder", {
         method: "DELETE",
@@ -43,7 +48,7 @@ const OrderDetails = () => {
       }
 
       alert("Order cancelled successfully");
-      navigate("/ListOfOrders")
+      navigate("/ListOfOrders");
     } catch (error) {
       console.error("Error:", error);
       alert(error.message);
@@ -66,10 +71,7 @@ const OrderDetails = () => {
           <p><b>Delivery Time:</b> {order.deliveryTime}</p>
           <p><b>Status:</b> {order.status}</p>
           <p><b>Courier Info:</b> {order.courierID}</p>
-
-          {order.status === 'pending' && (
-            <button type="button" onClick={cancelOrder}>Cancel Order</button>
-          )}
+          <button type="button" onClick={cancelOrder}>Cancel Order</button>
         </div>
       </form>
     </div>
