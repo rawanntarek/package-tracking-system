@@ -9,6 +9,7 @@ const Login = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+
         if (Email && Password) {
             try {
                 const response = await fetch('http://localhost:3000/login', {
@@ -19,18 +20,32 @@ const Login = () => {
                     body: JSON.stringify({ email: Email, password: Password }),
                 });
 
+                const data = await response.json();  // Parse the response
+
                 if (response.ok) {
-                    alert("Login Successful");
-                    navigate("/CreateOrder");
+                    alert(data.message);  // Show the success message from the server
+                    console.log(data.userID)
+                    // Save the user's email and role in local storage
+                    localStorage.setItem('userEmail', Email);
+                    localStorage.setItem('userRole', data.role);  
+                    localStorage.setItem('courierID', data.userID);// Store the user role
+
+                    // Navigate based on the user role
+                    if (data.role === 'Admin') {
+                        navigate("/AdminDashboard"); // Example for admin
+                    } else if (data.role === 'Courier') {
+                        navigate("/courierDashboard"); // Example for courier
+                    } else {
+                        navigate("/CreateOrder"); // Default user role dashboard
+                    }
                 } else {
-                    const errorData = await response.text();
-                    alert(errorData);
+                    alert(data.message || "Login failed");  // Show the error message if login failed
                 }
             } catch (error) {
-                alert('User Not Found.');
+                alert('An error occurred. Please try again later.');
             }
         } else {
-            alert("Please fill all fields");
+            alert("Please fill in all fields.");
         }
     };
 

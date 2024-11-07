@@ -1,53 +1,67 @@
-import React, { useState } from 'react';
-import './ListOfOrders.css';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import "./ListOfOrders.css"; // Import the CSS file
 
-const ListOfOrders = () => {
-    
-    const [orders, setOrders] = useState([
-        { id: 1, item: 'Laptop', status: 'Shipped' },
-        { id: 2, item: 'Phone', status: 'In Transit' },
-        { id: 3, item: 'Headphones', status: 'Delivered' },
-    ]);
-    
-    let content;
+const UserOrders = () => {
+  const [orders, setOrders] = useState([]);
+  const navigate = useNavigate();
 
-if (orders.length > 0) {
-    // If there are orders, render each one in a list
-    content = (
-        <ul>
-            {orders.map(order => (
-                <li key={order.id}>
-                    <strong>Item:</strong> {order.item} <br />
-                    <strong>Status:</strong> {order.status}
-                </li>
-            ))}
-        </ul>
-    );
-} else {
-    // If there are no orders, display a message
-    content = <p>No orders found</p>;
-}
+  const fetchOrders = async () => {
+    try {
+      const email = localStorage.getItem("userEmail");
+      if (!email) {
+        alert("Email is required");
+        return;
+      }
 
+      const response = await fetch("http://localhost:3000/getuserorders", {
+        method: "GET",
+        headers: {
+          "email": email,
+        },
+      });
 
-    return (
-        <div>
-            <main>
-                <center>
-                    <h2>Package Tracking System</h2>
-                    <h2>Your Orders</h2>
-                </center>
-            </main>
-            <center>
-                <form>
-                    <label>Orders</label>
-                    <div className="orders-list">
-                       {content}
-                    </div>
-                </form>
-            </center>
-        </div>
-    );
-}
+      if (!response.ok) {
+        throw new Error("Failed to fetch orders");
+      }
 
-export default ListOfOrders;
+      const data = await response.json();
+      setOrders(data);
+    } catch (error) {
+      alert(error.message);
+      console.log("Error:", error);
+    }
+  };
+
+  useEffect(() => {
+    fetchOrders();
+  }, []);
+
+  const viewOrderDetails = (id) => {
+    navigate(`/OrderDetails/${id}`);
+  };
+
+  return (
+    <div>
+      <header>
+        <h1>User Orders</h1>
+      </header>
+      {orders.length === 0 ? (<form><center> <p>No orders found</p></center></form> ) :(
+      <ul>
+        {orders.map((order, index) => (
+        <form>
+          <li key={index}>
+            <p><b>Order {index + 1}: </b>{order.id}</p>
+            <p><b>Status: </b>{order.status}</p>
+            <button type="button" onClick={() => viewOrderDetails(order.id)}>
+              View Order Details
+            </button>
+          </li>
+          </form>
+        ))}
+      </ul>
+      )}</div>
+  );
+};
+
+export default UserOrders;

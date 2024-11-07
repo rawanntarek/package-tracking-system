@@ -10,24 +10,30 @@ import (
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 // UserData Struct
 type UserData struct {
-	Name     string `json:"name"`
-	Email    string `json:"email"`
-	Phone    string `json:"phone"`
-	Password string `json:"password"`
+	ID           primitive.ObjectID `bson:"_id,omitempty" json:"userid"`
+	Name         string             `json:"name"`
+	Email        string             `json:"email"`
+	Phone        string             `json:"phone"`
+	Password     string             `json:"password"`
+	Type_of_user string             `json:"Type_of_user"`
 }
 
 type Order struct {
-	PickupLocation  string `json:"pickupLocation"`
-	DropOffLocation string `json:"dropOffLocation"`
-	PackageDetails  string `json:"packageDetails"`
-	DeliveryTime    string `json:"deliveryTime"`
-	UserEmail       string `json:"userEmail"`
+	ID              primitive.ObjectID `bson:"_id,omitempty" json:"id"`
+	PickupLocation  string             `json:"pickupLocation"`
+	DropOffLocation string             `json:"dropOffLocation"`
+	PackageDetails  string             `json:"packageDetails"`
+	DeliveryTime    string             `json:"deliveryTime"`
+	UserEmail       string             `json:"userEmail"`
+	Status          string             `json:"status"`
+	courierID       string             `json:"courierID"`
 }
 
 // Global MongoDB client
@@ -41,8 +47,8 @@ func ErrorResponse(w http.ResponseWriter, message string, statusCode int) {
 // CORS middleware to handle cross-origin requests
 func enableCORS(w http.ResponseWriter) {
 	w.Header().Set("Access-Control-Allow-Origin", "*") // Allow all origins (be cautious in production)
-	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
-	w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS") // Include OPTIONS for preflight requests
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, email,id,orderID,courierID")
+	w.Header().Set("Access-Control-Allow-Methods", "DELETE,GET ,POST, OPTIONS") // Include OPTIONS for preflight requests
 }
 
 // UserRegisteration handles the user registration process.
@@ -69,7 +75,7 @@ func UserRegisteration(w http.ResponseWriter, r *http.Request) {
 		ErrorResponse(w, "Invalid input", http.StatusBadRequest)
 		return
 	}
-	if user.Email == "" || user.Password == "" || user.Name == "" || user.Phone == "" {
+	if user.Email == "" || user.Password == "" || user.Name == "" || user.Phone == "" || user.Type_of_user == "" {
 		ErrorResponse(w, "fields are required", http.StatusBadRequest)
 		return
 	}
@@ -139,11 +145,18 @@ func UserLogin(w http.ResponseWriter, r *http.Request) {
 	} else if err != nil {
 		ErrorResponse(w, "Error checking credentials", http.StatusInternalServerError)
 		return
-	} else if err != mongo.ErrNoDocuments {
-		ErrorResponse(w, "User Logged in Successfully", http.StatusOK)
-
 	}
 
+	// Create response data with the user role
+	responseData := map[string]interface{}{
+		"message": "User logged in successfully",
+		"role":    foundUser.Type_of_user, // Send the role of the user
+		"userID":  foundUser.ID.Hex(),
+	}
+
+	// Set the response status to OK (only once)
+	w.WriteHeader(http.StatusOK)
+	_ = json.NewEncoder(w).Encode(responseData) // Send the response body
 }
 
 func CreateOrder(w http.ResponseWriter, r *http.Request) {
@@ -174,18 +187,229 @@ func CreateOrder(w http.ResponseWriter, r *http.Request) {
 		ErrorResponse(w, "All fields are required", http.StatusBadRequest)
 		return
 	}
-
+	order.Status = "pending"
 	// Insert the order into the database
 	collection := client.Database("Package_Tracking_System").Collection("Orders")
-	_, err = collection.InsertOne(context.TODO(), order)
+	result, err := collection.InsertOne(context.TODO(), order)
 	if err != nil {
 		ErrorResponse(w, "Error saving order to the database", http.StatusInternalServerError)
 		return
 	}
-
+	order.ID = result.InsertedID.(primitive.ObjectID)
 	// Respond with a success message
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("Order Created Successfully"))
+}
+
+func GetUserOrders(w http.ResponseWriter, r *http.Request) {
+	enableCORS(w)
+
+	if r.Method == http.MethodOptions {
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+
+	email := r.Header.Get("email")
+
+	if email == "" {
+		http.Error(w, "Email is required", http.StatusBadRequest)
+		return
+	}
+	log.Printf("Received %s request for %s", r.Method, r.URL.Path)
+
+	collection := client.Database("Package_Tracking_System").Collection("Orders")
+
+	// Filter orders by email
+	filter := bson.M{"useremail": email}
+	cursor, err := collection.Find(context.TODO(), filter)
+	if err != nil {
+		http.Error(w, "Failed to fetch orders", http.StatusInternalServerError)
+		return
+	}
+
+	var orders []Order
+	if err := cursor.All(context.TODO(), &orders); err != nil {
+		http.Error(w, "Error processing orders", http.StatusInternalServerError)
+		return
+	}
+
+	if len(orders) == 0 {
+		w.WriteHeader(http.StatusOK) // No orders found
+		w.Write([]byte("[]"))
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(orders)
+}
+func GetAllOrders(w http.ResponseWriter, r *http.Request) {
+	enableCORS(w)
+
+	log.Printf("Received %s request for %s", r.Method, r.URL.Path)
+
+	collection := client.Database("Package_Tracking_System").Collection("Orders")
+
+	// Fetch all orders without any filter
+	cursor, err := collection.Find(context.TODO(), bson.M{})
+	if err != nil {
+		http.Error(w, "Failed to fetch orders", http.StatusInternalServerError)
+		return
+	}
+
+	var orders []Order
+	if err := cursor.All(context.TODO(), &orders); err != nil {
+		http.Error(w, "Error processing orders", http.StatusInternalServerError)
+		return
+	}
+
+	// Send the orders as a JSON response
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(orders)
+}
+
+// Function to handle getting an order by ID
+func GetOrderById(w http.ResponseWriter, r *http.Request) {
+	enableCORS(w)
+
+	if r.Method == http.MethodOptions {
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+
+	orderID := r.Header.Get("id")
+	if orderID == "" {
+		http.Error(w, "Order ID is required", http.StatusBadRequest)
+		return
+	}
+
+	oid, err := primitive.ObjectIDFromHex(orderID)
+	if err != nil {
+		http.Error(w, "Invalid Order ID", http.StatusBadRequest)
+		return
+	}
+
+	collection := client.Database("Package_Tracking_System").Collection("Orders")
+	var order Order
+	err = collection.FindOne(context.TODO(), bson.M{"_id": oid}).Decode(&order)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			http.Error(w, "Order not found", http.StatusNotFound)
+		} else {
+			http.Error(w, "Failed to fetch order", http.StatusInternalServerError)
+		}
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(order)
+}
+func CancelOrder(w http.ResponseWriter, r *http.Request) {
+	enableCORS(w)
+
+	if r.Method == http.MethodOptions {
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+
+	orderID := r.Header.Get("id")
+	if orderID == "" {
+		http.Error(w, "Order ID is required", http.StatusBadRequest)
+		return
+	}
+
+	oid, err := primitive.ObjectIDFromHex(orderID)
+	if err != nil {
+		http.Error(w, "Invalid Order ID", http.StatusBadRequest)
+		return
+	}
+
+	collection := client.Database("Package_Tracking_System").Collection("Orders")
+	_, err = collection.DeleteOne(context.TODO(), bson.M{"_id": oid})
+	if err != nil {
+		http.Error(w, "Failed to delete order", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("Order deleted successfully"))
+}
+func AcceptOrder(w http.ResponseWriter, r *http.Request) {
+	enableCORS(w)
+
+	// Handle preflight request
+	if r.Method == http.MethodOptions {
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+
+	// Retrieve order ID and courier ID from headers
+	orderID := r.Header.Get("orderID")
+	courierID := r.Header.Get("courierID")
+	log.Printf("Received orderID: %s, courierID: %s", orderID, courierID) // Add this line for debugging
+	if orderID == "" || courierID == "" {
+		http.Error(w, "Order ID and Courier ID are required", http.StatusBadRequest)
+		return
+	}
+
+	// Parse the order ID to MongoDB ObjectID format
+	oid, err := primitive.ObjectIDFromHex(orderID)
+	if err != nil {
+		http.Error(w, "Invalid Order ID format", http.StatusBadRequest)
+		return
+	}
+
+	// Access the Orders collection in the database
+	collection := client.Database("Package_Tracking_System").Collection("Orders")
+	filter := bson.M{"_id": oid}
+	update := bson.M{"$set": bson.M{"courierID": courierID, "status": "accepted"}}
+
+	// Attempt to update the order document
+	result, err := collection.UpdateOne(context.TODO(), filter, update)
+	if err != nil {
+		log.Printf("Error updating order: %v", err)
+		http.Error(w, "Failed to accept order", http.StatusInternalServerError)
+		return
+	}
+
+	// Check if the order document was found and updated
+	if result.MatchedCount == 0 {
+		http.Error(w, "Order not found", http.StatusNotFound)
+		return
+	}
+
+	// Send success response
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("Order accepted successfully"))
+}
+
+func DeclineOrder(w http.ResponseWriter, r *http.Request) {
+	enableCORS(w)
+
+	if r.Method == http.MethodOptions {
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+
+	orderID := r.URL.Query().Get("orderID")
+	if orderID == "" {
+		http.Error(w, "Order ID is required", http.StatusBadRequest)
+		return
+	}
+
+	oid, err := primitive.ObjectIDFromHex(orderID)
+	if err != nil {
+		http.Error(w, "Invalid Order ID", http.StatusBadRequest)
+		return
+	}
+
+	collection := client.Database("Package_Tracking_System").Collection("Orders")
+	_, err = collection.DeleteOne(context.TODO(), bson.M{"_id": oid})
+	if err != nil {
+		http.Error(w, "Failed to decline order", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("Order declined successfully"))
 }
 
 func main() {
@@ -208,6 +432,13 @@ func main() {
 	http.HandleFunc("/register", UserRegisteration)
 	http.HandleFunc("/login", UserLogin)
 	http.HandleFunc("/createorder", CreateOrder)
+	http.HandleFunc("/getuserorders", GetUserOrders)
+	http.HandleFunc("/getallorders", GetAllOrders)
+
+	http.HandleFunc("/getorder", GetOrderById)
+	http.HandleFunc("/cancelorder", CancelOrder)
+	http.HandleFunc("/acceptorder", AcceptOrder)
+	http.HandleFunc("/declineorder", DeclineOrder)
 
 	fmt.Printf("Server is running on port %s\n", port)
 	log.Fatal(http.ListenAndServe(port, nil)) // Start the server and log fatal errors

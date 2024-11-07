@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import './CreateOrder.css';
 import { useNavigate } from 'react-router-dom';
 
+
 const Order = () => {
     const [pickupLocation, setPickupLocation] = useState('');
     const [dropOffLocation, setDropOffLocation] = useState('');
@@ -11,6 +12,7 @@ const Order = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        const userEmail = localStorage.getItem('userEmail');
 
         if (pickupLocation && dropOffLocation && packageDetails && deliveryTime) {
             try {
@@ -19,12 +21,13 @@ const Order = () => {
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({ pickupLocation, dropOffLocation, packageDetails, deliveryTime , userEmail }),
+                    body: JSON.stringify({ pickupLocation, dropOffLocation, packageDetails, deliveryTime,userEmail }),
                 });
 
                 if (response.ok) {
                     alert("Order Created Successfully");
-                    navigate("/OrdersList");  
+                    
+                    navigate("/ListOfOrders");  
                 } else {
                     const errorData = await response.text();
                     alert(errorData);  
@@ -65,6 +68,8 @@ const Order = () => {
                         <label>Delivery Time:</label>
                         <input type="datetime-local" value={deliveryTime} required onChange={(e) => setDeliveryTime(e.target.value)} />
                         <br />
+                        <a href='/ListOfOrders'>list</a>
+                        <br/>
                         <button type="submit">Create Order</button>
                     </div>
                 </form>
