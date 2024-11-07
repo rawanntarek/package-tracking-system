@@ -306,7 +306,7 @@ func GetOrderById(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(order)
 }
-func CancelOrder(w http.ResponseWriter, r *http.Request) {
+func DeleteOrder(w http.ResponseWriter, r *http.Request) {
 	enableCORS(w)
 
 	if r.Method == http.MethodOptions {
@@ -336,6 +336,56 @@ func CancelOrder(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("Order deleted successfully"))
 }
+func CancelOrder(w http.ResponseWriter, r *http.Request) {
+	enableCORS(w)
+
+	if r.Method == http.MethodOptions {
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+
+	orderID := r.Header.Get("id")
+	if orderID == "" {
+		http.Error(w, "Order ID is required", http.StatusBadRequest)
+		return
+	}
+
+	oid, err := primitive.ObjectIDFromHex(orderID)
+	if err != nil {
+		http.Error(w, "Invalid Order ID", http.StatusBadRequest)
+		return
+	}
+
+	collection := client.Database("Package_Tracking_System").Collection("Orders")
+
+	// Check if the order status is "pending"
+	var order Order
+	err = collection.FindOne(context.TODO(), bson.M{"_id": oid}).Decode(&order)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			http.Error(w, "Order not found", http.StatusNotFound)
+		} else {
+			http.Error(w, "Failed to fetch order", http.StatusInternalServerError)
+		}
+		return
+	}
+
+	if order.Status != "pending" {
+		http.Error(w, "Order can only be cancelled if status is pending", http.StatusForbidden)
+		return
+	}
+
+	// Proceed to delete the order
+	_, err = collection.DeleteOne(context.TODO(), bson.M{"_id": oid})
+	if err != nil {
+		http.Error(w, "Failed to delete order", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("Order deleted successfully"))
+}
+
 func AcceptOrder(w http.ResponseWriter, r *http.Request) {
 	enableCORS(w)
 
@@ -566,6 +616,7 @@ func main() {
 
 	http.HandleFunc("/getorder", GetOrderById)
 	http.HandleFunc("/cancelorder", CancelOrder)
+	http.HandleFunc("/deleteorder", DeleteOrder)
 	http.HandleFunc("/acceptorder", AcceptOrder)
 	http.HandleFunc("/declineorder", DeclineOrder)
 	http.HandleFunc("/getassignedorders", GetAssignedOrdersForCourier)

@@ -32,7 +32,7 @@ function ManageOrders() {
   const deleteOrder = async (orderId) => {
     try {
       console.log(`Deleting order with ID: ${orderId}`);
-      const response = await fetch('http://localhost:3000/cancelorder', {
+      const response = await fetch('http://localhost:3000/deleteorder', {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
