@@ -2,7 +2,9 @@ import React, { useState, useEffect } from 'react';
 
 function CourierDashboard() {
   const [orders, setOrders] = useState([]);
+  const [orders, setOrders] = useState([]);
 
+  // Fetch all orders from the backend
   useEffect(() => {
     async function fetchOrders() {
       try {
@@ -12,7 +14,7 @@ function CourierDashboard() {
 
         if (response.ok) {
           const orders = await response.json();
-          setOrders(orders);
+          setOrders(orders); // Set the orders to state
         } else {
           console.error('Failed to fetch orders');
         }
@@ -21,9 +23,10 @@ function CourierDashboard() {
       }
     }
 
-    fetchOrders();
-  }, []);
+    fetchOrders(); // Fetch orders on component mount
+  }, []); // Empty dependency array to only run once on mount
 
+  // Handle Accept Order
   const acceptOrder = async (orderID) => {
     const courierID = localStorage.getItem('courierID'); // Get courier's ID from localStorage
 
@@ -37,19 +40,19 @@ function CourierDashboard() {
       const response = await fetch('http://localhost:3000/acceptorder', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'orderID': orderID,
-          'courierID': courierID,
+          'Content-Type': 'application/json', // Make sure to send the correct content type
         },
+        body: JSON.stringify({
+          orderID: orderID,
+          courierID: courierID, // Send the courier's ID along with the order ID
+        }),
       });
-
-
+  
       if (response.ok) {
         alert('Order Accepted and Assigned to Courier');
+        // Refresh the orders list after accepting
         const updatedOrders = orders.filter((order) => order.id !== orderID);
         setOrders(updatedOrders);
-      } else if (response.status === 404) {
-        alert('Order not found');
       } else {
         console.error('Failed to accept the order');
       }
@@ -58,23 +61,16 @@ function CourierDashboard() {
     }
   };
 
-  // Handle Decline Order
-
   const declineOrder = async (orderID) => {
-    const courierID = localStorage.getItem('courierID');
     try {
-      const response = await fetch(`http://localhost:3000/declineorder`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'orderID': orderID,
-          'courierID': courierID,
-        },
+      const response = await fetch(`http://localhost:3000/declineorder?orderID=${orderID}`, {
+        method: 'POST'
       });
 
       if (response.ok) {
         alert('Order Declined');
-        const updatedOrders = orders.filter((order) => order.id !== orderID);
+        // Refresh the orders list after declining
+        const updatedOrders = orders.filter((order) => order._id !== orderID);
         setOrders(updatedOrders);
       } else {
         console.error('Failed to decline the order');
