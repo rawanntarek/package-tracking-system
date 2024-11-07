@@ -2,12 +2,13 @@ import React from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import Login from './components/Login';
 import Registration from './components/Registration';
-<<<<<<<<< Temporary merge branch 1
 import ListOfOrders from './components/ListOfOrders';
-=========
 import CreateOrder from './components/CreateOrder';
-
->>>>>>>>> Temporary merge branch 2
+import AdminDashboard from './components/AdminDashboard';
+import AssignOrders from './components/assignorders'; // Note the correct component name
+import CourierDashboard from './components/CourierDashboard'; // Import the CourierDashboard component
+import ManageOrders from './components/ManageOrders'; // Import ManageOrders component
+import OrderDetails from './components/OrderDetails';
 
 function App() {
   return (
@@ -26,8 +27,7 @@ function App() {
         <Route path="/OrderDetails/:id" element={<OrderDetails />}/>
       </Routes>
     </Router>
-  );}
+  );
+}
 
-  export default App;
-
-
+export default App;
