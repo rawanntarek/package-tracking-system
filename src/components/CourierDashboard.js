@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 
 function CourierDashboard() {
-  const [orders, setOrders] = useState([]); // Initialize with an empty array
+  const [orders, setOrders] = useState([]);
 
+  // Fetch all orders from the backend
   useEffect(() => {
     async function fetchOrders() {
       try {
@@ -12,7 +13,7 @@ function CourierDashboard() {
 
         if (response.ok) {
           const orders = await response.json();
-          setOrders(orders);
+          setOrders(orders); // Set the orders to state
         } else {
           console.error('Failed to fetch orders');
         }
@@ -21,33 +22,31 @@ function CourierDashboard() {
       }
     }
 
-    fetchOrders();
-  }, []);
+    fetchOrders(); // Fetch orders on component mount
+  }, []); // Empty dependency array to only run once on mount
 
+  // Handle Accept Order
   const acceptOrder = async (orderID) => {
     const courierID = localStorage.getItem('courierID'); // Get courier's ID from localStorage
 
-    if (!courierID) {
-      alert('Courier ID not found in localStorage');
-      return;
-    }
-
+  
     try {
       const response = await fetch('http://localhost:3000/acceptorder', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'orderID': orderID,
-          'courierID': courierID,
+          'Content-Type': 'application/json', // Make sure to send the correct content type
         },
+        body: JSON.stringify({
+          orderID: orderID,
+          courierID: courierID, // Send the courier's ID along with the order ID
+        }),
       });
-
+  
       if (response.ok) {
         alert('Order Accepted and Assigned to Courier');
+        // Refresh the orders list after accepting
         const updatedOrders = orders.filter((order) => order.id !== orderID);
         setOrders(updatedOrders);
-      } else if (response.status === 404) {
-        alert('Order not found');
       } else {
         console.error('Failed to accept the order');
       }
@@ -55,22 +54,19 @@ function CourierDashboard() {
       console.error('Error accepting order:', error);
     }
   };
+  
 
+  // Handle Decline Order
   const declineOrder = async (orderID) => {
-    const courierID = localStorage.getItem('courierID');
     try {
-      const response = await fetch(`http://localhost:3000/declineorder`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'orderID': orderID,
-          'courierID': courierID,
-        },
+      const response = await fetch(`http://localhost:3000/declineorder?orderID=${orderID}`, {
+        method: 'POST'
       });
 
       if (response.ok) {
         alert('Order Declined');
-        const updatedOrders = orders.filter((order) => order.id !== orderID);
+        // Refresh the orders list after declining
+        const updatedOrders = orders.filter((order) => order._id !== orderID);
         setOrders(updatedOrders);
       } else {
         console.error('Failed to decline the order');
@@ -82,38 +78,33 @@ function CourierDashboard() {
 
   return (
     <div className="orders-list">
-      <center>
-      <header>
-      <h1>Orders</h1>
-      </header>
-      </center>
-      {orders && orders.length > 0 ? (
-        <ul>
+      <h3>Orders</h3>
+      {orders.length > 0 ? (
+        <ul className="order-list">
           {orders.map((order) => (
-            <form key={order.id}>
-              <li>
-                <div><strong>Order ID:</strong> {order.id}</div>
-                <div><strong>Package Details:</strong> {order.packageDetails}</div>
-                <div>
-                  <strong>Pickup Location:</strong> {order.pickupLocation}<br />
-                  <strong>Drop-off Location:</strong> {order.dropOffLocation}<br />
-                  <strong>Delivery Time:</strong> {order.deliveryTime}<br/>
-                  <strong>Status:</strong> {order.status}
-                </div>
-                <div>
-                  <button
-                    onClick={() => acceptOrder(order.id)}
-                  >
-                    Accept
-                  </button>
-                  <button
-                    onClick={() => declineOrder(order.id)}
-                  >
-                    Decline
-                  </button>
-                </div>
-              </li>
-            </form>
+            <li key={order.id} className="order-item">
+              <div><strong>Order ID:</strong> {order.id}</div> {/* Display Order ID */}
+              <div><strong>Package Details:</strong> {order.packageDetails}</div>
+              <div>
+                <strong>Pickup Location:</strong> {order.pickupLocation}<br />
+                <strong>Drop-off Location:</strong> {order.dropOffLocation}<br />
+                <strong>Delivery Time:</strong> {order.deliveryTime}
+              </div>
+              <div className="buttons">
+                <button
+                  className="accept-btn"
+                  onClick={() => acceptOrder(order.id)}
+                >
+                  Accept
+                </button>
+                <button
+                  className="decline-btn"
+                  onClick={() => declineOrder(order.id)}
+                >
+                  Decline
+                </button>
+              </div>
+            </li>
           ))}
         </ul>
       ) : (

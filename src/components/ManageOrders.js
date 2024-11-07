@@ -34,8 +34,27 @@ function ManageOrders() {
     ));
   };
 
-  const deleteOrder = (orderId) => {
-    setOrders(orders.filter(order => order._id !== orderId));
+  const deleteOrder = async (orderId) => {
+    try {
+      console.log(`Deleting order with ID: ${orderId}`); // Debug log to see if this gets called
+      const response = await fetch('http://localhost:3000/cancelorder', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          id: orderId, // Pass the order ID in the header
+        },
+      });
+
+      if (response.ok) {
+        console.log('Order deleted successfully');
+        // If the delete request was successful, update the state
+        setOrders(orders.filter((order) => order._id !== orderId));
+      } else {
+        console.error('Failed to delete order:', await response.text());
+      }
+    } catch (error) {
+      console.error('Error deleting order:', error);
+    }
   };
 
   const reassignCourier = (orderId) => {
