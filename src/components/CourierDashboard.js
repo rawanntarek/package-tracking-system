@@ -40,12 +40,10 @@ function CourierDashboard() {
       const response = await fetch('http://localhost:3000/acceptorder', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json', // Make sure to send the correct content type
+          'Content-Type': 'application/json',
+          'orderID': orderID,
+          'courierID': courierID,
         },
-        body: JSON.stringify({
-          orderID: orderID,
-          courierID: courierID, // Send the courier's ID along with the order ID
-        }),
       });
   
       if (response.ok) {
@@ -61,11 +59,18 @@ function CourierDashboard() {
     }
   };
 
-  const declineOrder = async (orderID) => {
-    try {
-      const response = await fetch(`http://localhost:3000/declineorder?orderID=${orderID}`, {
-        method: 'POST'
-      });
+
+    const declineOrder = async (orderID) => {
+      const courierID = localStorage.getItem('courierID');
+      try {
+        const response = await fetch(`http://localhost:3000/declineorder`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'orderID': orderID,
+            'courierID': courierID,
+          },
+        });
 
       if (response.ok) {
         alert('Order Declined');
