@@ -665,7 +665,7 @@ func GetAllCouriers(w http.ResponseWriter, r *http.Request) {
     collection := client.Database("Package_Tracking_System").Collection("Registered Users")
 
     // Filter users where the 'Type_of_user' field is 'Courier'
-    cursor, err := collection.Find(context.TODO(), bson.M{"Type_of_user": "Courier"})
+    cursor, err := collection.Find(context.TODO(), bson.M{"type_of_user": "Courier"})
     if err != nil {
         http.Error(w, "Failed to fetch couriers", http.StatusInternalServerError)
         return
