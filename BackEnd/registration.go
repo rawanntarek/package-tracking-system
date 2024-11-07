@@ -446,6 +446,51 @@ func DeclineOrder(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("Order declined successfully"))
 }
+func GetAssignedOrdersForCourier(w http.ResponseWriter, r *http.Request) {
+	enableCORS(w)
+
+	if r.Method == http.MethodOptions {
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+
+	// Get the courier's ID from the request header
+	courierID := r.Header.Get("courierID")
+	if courierID == "" {
+		log.Println("Courier ID is missing from the header")
+		http.Error(w, "Courier ID is required", http.StatusBadRequest)
+		return
+	}
+	log.Printf("Received request for courier with ID: %s", courierID)
+
+	// Access the Orders collection in MongoDB
+	collection := client.Database("Package_Tracking_System").Collection("Orders")
+
+	// Filter orders by courierID
+	filter := bson.M{"courierID": courierID}
+	cursor, err := collection.Find(context.TODO(), filter)
+	if err != nil {
+		log.Printf("MongoDB query error: %v", err)
+		http.Error(w, "Failed to fetch assigned orders", http.StatusInternalServerError)
+		return
+	}
+
+	var orders []Order
+	if err := cursor.All(context.TODO(), &orders); err != nil {
+		log.Printf("Error processing orders: %v", err)
+		http.Error(w, "Error processing orders", http.StatusInternalServerError)
+		return
+	}
+
+	if len(orders) == 0 {
+		w.WriteHeader(http.StatusOK) // No orders found
+		w.Write([]byte("[]"))
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(orders)
+}
 
 func main() {
 	// MongoDB URI
@@ -474,6 +519,7 @@ func main() {
 	http.HandleFunc("/cancelorder", CancelOrder)
 	http.HandleFunc("/acceptorder", AcceptOrder)
 	http.HandleFunc("/declineorder", DeclineOrder)
+	http.HandleFunc("/getassignedorders", GetAssignedOrdersForCourier)
 
 	fmt.Printf("Server is running on port %s\n", port)
 	log.Fatal(http.ListenAndServe(port, nil)) // Start the server and log fatal errors
