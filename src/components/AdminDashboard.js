@@ -1,7 +1,6 @@
 // AdminDashboard.js
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import './AdminDashboard.css'; // Make sure to import the CSS
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
@@ -17,13 +16,23 @@ const AdminDashboard = () => {
   };
 
   return (
-    <div className="admin-dashboard">
+    <div>
       <h1>Admin Dashboard</h1>
-      <p>Welcome to the Admin Dashboard. What would you like to do today?</p>
-      <div className="admin-buttons">
-        <button className="admin-button" onClick={goToManageOrders}>Manage Orders</button>
-        <button className="admin-button" onClick={goToAssignOrders}>Assign Orders to Courier</button>
+      <center>
+      <p>Welcome to the Admin Dashboard.</p>
+      </center>
+      <center>
+      <form>
+      <div>
+        <div>
+        <button onClick={goToManageOrders}>Manage Orders</button>
+        </div>
+        <div>
+        <button  onClick={goToAssignOrders}>Assign Orders to Courier</button>
+        </div>
       </div>
+      </form>
+      </center>
     </div>
   );
 };
