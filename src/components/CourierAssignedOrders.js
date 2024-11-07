@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 
 function CourierAssignedOrders() {
   const [assignedOrders, setAssignedOrders] = useState([]);
-  const [loading, setLoading] = useState(true);
 
   // Fetch assigned orders for the courier
   useEffect(() => {
@@ -12,7 +11,6 @@ function CourierAssignedOrders() {
         return;
     }
     async function fetchAssignedOrders() {
-      setLoading(true);
       try {
         const response = await fetch('http://localhost:3000/getassignedorders', {
           method: 'GET',
@@ -36,6 +34,42 @@ function CourierAssignedOrders() {
   
     fetchAssignedOrders();
   }, []);
+  const updateOrderStatus=async(orderId,newStatus)=>
+  {
+    
+    const courierId=localStorage.getItem("courierID");
+    console.log("cid",courierId);
+      console.log("oid",orderId);
+      console.log("status",newStatus);
+    try{
+      const response= await fetch("http://localhost:3000/updateorderstatus" ,
+        {
+          method:"PUT",
+          headers:{
+            'Content-Type': 'application/json',
+            'orderID':orderId,
+            'courierID':courierId,
+            'status':newStatus
+          }
+        }
+      )
+      
+
+      if (response.ok)
+      {
+        alert("order status update successfully");
+        setAssignedOrders(assignedOrders.map(order=>
+          order.id===orderId ? {...order,status:newStatus}: order
+
+        ));
+      }else{
+        alert("failed to update status")
+      }
+    }catch(error)
+    {
+      alert("error updating status");
+    }
+  }
 
   return (
     <div>
@@ -55,6 +89,16 @@ function CourierAssignedOrders() {
                 <b>Delivery Time:</b> {order.deliveryTime}
                 <br />
                 <b>Status:</b> {order.status}
+                <br/>
+                <label>update Status: </label>
+                <select id={`status-${order.id}`} 
+                defaultValue={order.status} 
+                onChange={(e) => updateOrderStatus(order.id, e.target.value)} 
+                > 
+                <option value="picked Up">picked Up</option>
+                <option value="in_transit">In Transit</option>
+                 <option value="delivered">Delivered</option>
+                 </select>
               </div>
             </li>
             </form>

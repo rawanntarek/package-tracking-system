@@ -49,8 +49,8 @@ func ErrorResponse(w http.ResponseWriter, message string, statusCode int) {
 // CORS middleware to handle cross-origin requests
 func enableCORS(w http.ResponseWriter) {
 	w.Header().Set("Access-Control-Allow-Origin", "*") // Allow all origins (be cautious in production)
-	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, email,id,orderID,courierID")
-	w.Header().Set("Access-Control-Allow-Methods", "DELETE,GET ,POST, OPTIONS") // Include OPTIONS for preflight requests
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, status,email,id,orderID,courierID")
+	w.Header().Set("Access-Control-Allow-Methods", "PUT,DELETE,GET ,POST, OPTIONS") // Include OPTIONS for preflight requests
 }
 
 // UserRegisteration handles the user registration process.
@@ -491,6 +491,55 @@ func GetAssignedOrdersForCourier(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(orders)
 }
+func UpdateOrderStatus(w http.ResponseWriter, r *http.Request) {
+	enableCORS(w)
+
+	if r.Method == http.MethodOptions {
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+
+	OrderID := r.Header.Get("orderID")
+	CourierID := r.Header.Get("courierID")
+	Status := r.Header.Get("status")
+
+	if OrderID == "" || CourierID == "" || Status == "" {
+		http.Error(w, "Order ID, Courier ID, and Status are required", http.StatusBadRequest)
+		return
+	}
+
+	// Convert the order ID into MongoDB ObjectID
+	oid, err := primitive.ObjectIDFromHex(OrderID)
+	if err != nil {
+		http.Error(w, "Invalid Order ID", http.StatusBadRequest)
+		return
+	}
+
+	// Access the Orders collection
+	collection := client.Database("Package_Tracking_System").Collection("Orders")
+	filter := bson.M{"_id": oid, "courierID": CourierID}
+
+	var order Order
+	err = collection.FindOne(context.TODO(), filter).Decode(&order)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			http.Error(w, "Order not found or not assigned to this courier", http.StatusNotFound)
+		} else {
+			http.Error(w, "Failed to fetch order", http.StatusInternalServerError)
+		}
+		return
+	}
+
+	update := bson.M{"$set": bson.M{"status": Status}}
+	_, err = collection.UpdateOne(context.TODO(), filter, update)
+	if err != nil {
+		http.Error(w, "Failed to update order status", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("Order status updated successfully"))
+}
 
 func main() {
 	// MongoDB URI
@@ -520,6 +569,7 @@ func main() {
 	http.HandleFunc("/acceptorder", AcceptOrder)
 	http.HandleFunc("/declineorder", DeclineOrder)
 	http.HandleFunc("/getassignedorders", GetAssignedOrdersForCourier)
+	http.HandleFunc("/updateorderstatus", UpdateOrderStatus)
 
 	fmt.Printf("Server is running on port %s\n", port)
 	log.Fatal(http.ListenAndServe(port, nil)) // Start the server and log fatal errors

@@ -2,9 +2,8 @@ import React, { useState, useEffect } from 'react';
 import './ManageOrders.css';
 
 function ManageOrders() {
-  const [orders, setOrders] = useState([]);
+  const [orders, setOrders] = useState([]); // Initialize with an empty array
 
-  // Fetch orders from the backend
   useEffect(() => {
     async function fetchOrders() {
       try {
@@ -15,63 +14,34 @@ function ManageOrders() {
 
         if (response.ok) {
           const data = await response.json();
-          setOrders(data); // Set the fetched orders to state
+          setOrders(data||[]); // Set the fetched orders to state
         } else {
           console.error('Failed to fetch orders');
+          setOrders([])
         }
       } catch (error) {
         console.error('Error fetching orders:', error);
+        setOrders([])
+
       }
     }
 
     fetchOrders();
   }, []);
 
-  const updateOrderStatus = async (orderId) => {
-    const newStatus = prompt("Enter new status:");
-  
-    // If the new status is empty, return without making the update
-    if (!newStatus) return;
-  
-    try {
-      const response = await fetch('http://localhost:3000/updateorderstatus', {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          orderId: orderId,
-          status: newStatus, // Send the new status to the backend
-        }),
-      });
-  
-      if (response.ok) {
-        // If the request was successful, update the order status in the frontend state
-        setOrders(orders.map(order =>
-          order._id === orderId ? { ...order, status: newStatus } : order
-        ));
-      } else {
-        console.error("Failed to update order status:", await response.text());
-      }
-    } catch (error) {
-      console.error("Error updating order status:", error);
-    }
-  };
-
   const deleteOrder = async (orderId) => {
     try {
-      console.log(`Deleting order with ID: ${orderId}`); // Debug log to see if this gets called
+      console.log(`Deleting order with ID: ${orderId}`);
       const response = await fetch('http://localhost:3000/cancelorder', {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
-          id: orderId, // Pass the order ID in the header
+          'id': orderId,
         },
       });
 
       if (response.ok) {
         console.log('Order deleted successfully');
-        // If the delete request was successful, update the state
         setOrders(orders.filter((order) => order._id !== orderId));
       } else {
         console.error('Failed to delete order:', await response.text());
@@ -81,15 +51,8 @@ function ManageOrders() {
     }
   };
 
-  const reassignCourier = (orderId) => {
-    const newCourier = prompt("Enter new courier name:");
-    setOrders(orders.map(order => 
-      order._id === orderId ? { ...order, courier: newCourier || order.courier } : order
-    ));
-  };
-
   return (
-    <div className="orders-container">
+    <div>
       <h1>Manage Orders</h1>
       <table>
         <thead>
@@ -105,22 +68,26 @@ function ManageOrders() {
           </tr>
         </thead>
         <tbody>
-          {orders.map(order => (
-            <tr key={order._id}>
-              <td>{order._id}</td>
-              <td>{order.pickupLocation}</td>
-              <td>{order.dropOffLocation}</td>
-              <td>{order.packageDetails}</td>
-              <td>{order.deliveryTime}</td>
-              <td>{order.userEmail}</td>
-              <td>{order.status}</td>
-              <td>
-                <button className="update-btn" onClick={() => updateOrderStatus(order._id)}>Update Status</button>
-                <button className="reassign-btn" onClick={() => reassignCourier(order._id)}>Reassign Courier</button>
-                <button className="delete-btn" onClick={() => deleteOrder(order._id)}>Delete</button>
-              </td>
+          {orders.length > 0 ? (
+            orders.map(order => (
+              <tr key={order.id}>
+                <td>{order.id}</td>
+                <td>{order.pickupLocation}</td>
+                <td>{order.dropOffLocation}</td>
+                <td>{order.packageDetails}</td>
+                <td>{order.deliveryTime}</td>
+                <td>{order.userEmail}</td>
+                <td>{order.status}</td>
+                <td>
+                  <button onClick={() => deleteOrder(order.id)}>Delete</button>
+                </td>
+              </tr>
+            ))
+          ) : (
+            <tr>
+              <td colSpan="8">No orders found</td>
             </tr>
-          ))}
+          )}
         </tbody>
       </table>
     </div>

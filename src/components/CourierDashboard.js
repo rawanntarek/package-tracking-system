@@ -118,7 +118,6 @@ function CourierDashboard() {
                   </button>
                 </div>
               </li>
-              <a href='/CourierAssignedOrders'>assigned orders</a>
 
             </form>
           ))}

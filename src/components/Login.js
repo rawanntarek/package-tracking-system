@@ -38,9 +38,9 @@ const Login = () => {
                     if (data.role === 'Admin') {
                         navigate("/AdminDashboard"); // Example for admin
                     } else if (data.role === 'Courier') {
-                        navigate("/courierDashboard"); // Example for courier
+                        navigate("/CourierHomeScreen"); // Example for courier
                     } else {
-                        navigate("/CreateOrder"); // Default user role dashboard
+                        navigate("/UserHomeScreen"); // Default user role dashboard
                     }
                 } else {
                     alert(data.message || "Login failed");  // Show the error message if login failed

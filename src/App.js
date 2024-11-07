@@ -10,6 +10,10 @@ import CourierDashboard from './components/CourierDashboard'; // Import the Cour
 import ManageOrders from './components/ManageOrders'; // Import ManageOrders component
 import OrderDetails from './components/OrderDetails';
 import CourierAssignedOrders from './components/CourierAssignedOrders';
+import UserHomeScreen from './components/UserHomeScreen';
+import CourierHomeScreen from './components/CourierHomeScreen';
+
+
 
 function App() {
   return (
@@ -25,6 +29,10 @@ function App() {
         <Route path="/manageorders" element={<ManageOrders />} />  {/* Add route for ManageOrders */}
         <Route path="/OrderDetails/:id" element={<OrderDetails />}/>
         <Route path="/CourierAssignedOrders" element={<CourierAssignedOrders />}/>
+        <Route path="/UserHomeScreen" element={<UserHomeScreen />}/>
+        <Route path="/CourierHomeScreen" element={<CourierHomeScreen />}/>
+
+
 
       </Routes>
     </Router>
