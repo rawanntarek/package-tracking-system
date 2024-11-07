@@ -59,8 +59,9 @@ function ManageOrders() {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
+          'orderID':orderId,
+          'status':newStatus
         },
-        body: JSON.stringify({ id: orderId, status: newStatus }), // Send ID and status in JSON body
       });
 
       if (response.ok) {

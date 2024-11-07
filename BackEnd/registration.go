@@ -590,6 +590,7 @@ func UpdateOrderStatus(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("Order status updated successfully"))
 }
+
 // ChangeStatus updates the status of an order
 func ChangeStatus(w http.ResponseWriter, r *http.Request) {
 	enableCORS(w)
@@ -607,26 +608,17 @@ func ChangeStatus(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Parse the request body into a struct
-	var requestData struct {
-		OrderID string `json:"id"`
-		Status  string `json:"status"`
-	}
-
-	// Decode the JSON request body
-	err := json.NewDecoder(r.Body).Decode(&requestData)
-	if err != nil {
-		http.Error(w, "Invalid JSON format", http.StatusBadRequest)
-		return
-	}
+	OrderID := r.Header.Get("orderID")
+	Status := r.Header.Get("status")
 
 	// Check if OrderID and Status are provided
-	if requestData.OrderID == "" || requestData.Status == "" {
+	if OrderID == "" || Status == "" {
 		http.Error(w, "Order ID and Status are required", http.StatusBadRequest)
 		return
 	}
 
 	// Convert the OrderID to MongoDB's ObjectID format
-	oid, err := primitive.ObjectIDFromHex(requestData.OrderID)
+	oid, err := primitive.ObjectIDFromHex(OrderID)
 	if err != nil {
 		http.Error(w, "Invalid Order ID format", http.StatusBadRequest)
 		return
@@ -637,7 +629,7 @@ func ChangeStatus(w http.ResponseWriter, r *http.Request) {
 
 	// Define the filter and update operations
 	filter := bson.M{"_id": oid}
-	update := bson.M{"$set": bson.M{"status": requestData.Status}}
+	update := bson.M{"$set": bson.M{"status": Status}}
 
 	// Execute the update operation in MongoDB
 	_, err = collection.UpdateOne(context.TODO(), filter, update)
