@@ -1,61 +1,110 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import './assignorders.css';
 
 const AssignOrders = () => {
-    const [orders, setOrders] = useState([]);
-    const [couriers, setCouriers] = useState([]);
+  const navigate = useNavigate();
+  const [orders, setOrders] = useState([]);
+  const [couriers, setCouriers] = useState([]);
 
-    useEffect(() => {
-        const fetchAllOrdersAndCouriers = async () => {
-            try {
-                // Fetch all orders
-                const ordersResponse = await fetch("http://localhost:3000/getallorders", { method: "GET" });
-                if (!ordersResponse.ok) throw new Error('Failed to fetch orders');
-                const ordersData = await ordersResponse.json();
-                setOrders(ordersData);
+  useEffect(() => {
+    fetchOrders();
+    fetchCouriers();
+  }, []);
 
-                // Fetch couriers data
-                const couriersResponse = await fetch("http://localhost:3000/getcouriers", { method: "GET" });
-                if (!couriersResponse.ok) throw new Error('Failed to fetch couriers');
-                const couriersData = await couriersResponse.json();
-                setCouriers(couriersData);
-            } catch (error) {
-                console.error("Error fetching data:", error);
-            }
-        };
+  // Fetch orders from the backend API
+  const fetchOrders = async () => {
+    try {
+      const response = await fetch('http://localhost:3000/getallorders'); // Replace with your API URL
+      const data = await response.json();
+      setOrders(data); // Assuming the API response returns a list of orders
+    } catch (error) {
+      console.error('Error fetching orders:', error);
+    }
+  };
 
-        fetchAllOrdersAndCouriers();
-    }, []);
+  // Fetch couriers (you can replace this with a real API call)
+  const fetchCouriers = async () => {
+    // Assuming couriers are fetched from another API
+    try {
+      const response = await fetch('http://localhost:8080/getAllCouriers'); // Replace with your API URL
+      const data = await response.json();
+      setCouriers(data); // Assuming the API response returns a list of couriers
+    } catch (error) {
+      console.error('Error fetching couriers:', error);
+    }
+  };
 
-    return (
-        <div className="orders-list">
-            <h3>Orders</h3>
-            {orders.length > 0 ? (
-                <ul className="order-list">
-                    {orders.map((order) => (
-                        <li key={order._id} className="order-item">
-                            <div>{order.packageDetails}</div>
-                        </li>
-                    ))}
-                </ul>
-            ) : (
-                <p>No orders found</p>
-            )}
+  const handleAssignOrder = async (orderId, courierId) => {
+    try {
+      // Here you can make an API call to assign the order to the courier
+      const response = await fetch('http://localhost:8080/assignOrder', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ orderId, courierId }),
+      });
 
-            <h3>Couriers</h3>
-            {couriers.length > 0 ? (
-                <ul className="courier-list">
+      if (response.ok) {
+        alert(`Order ${orderId} assigned to Courier ${courierId}`);
+        // Optionally, you can refetch orders or update the state to reflect the changes
+        fetchOrders();
+      } else {
+        alert('Failed to assign order');
+      }
+    } catch (error) {
+      console.error('Error assigning order:', error);
+    }
+  };
+
+  return (
+    <div className="assign-orders">
+      <h1>Assign Orders to Courier</h1>
+      <p>Select an order and assign it to a courier.</p>
+      <div className="orders-list">
+        <table>
+          <thead>
+            <tr>
+              <th>Order ID</th>
+              <th>Status</th>
+              <th>courierID</th>
+              <th>courierName</th>
+              <th>courierPhone</th>
+              <th>ReAssign Courier</th>
+
+            </tr>
+          </thead>
+          <tbody>
+            {orders.map((order) => (
+              <tr key={order._id}>
+                <td>{order.id}</td>
+                <td>{order.status}</td>
+                <td>{order.courierID}</td>
+                <td>{order.courierName}</td>
+                <td>{order.courierPhone}</td>
+                
+
+                <td>
+                  <select
+                    onChange={(e) => handleAssignOrder(order._id, e.target.value)}
+                    defaultValue=""
+                  >
+                    <option value="" disabled>Select Courier</option>
                     {couriers.map((courier) => (
-                        <li key={courier._id} className="courier-item">
-                            <div>{courier.name}</div>
-                        </li>
+                      <option key={courier.id} value={courier.id}>
+                        {courier.name}
+                      </option>
                     ))}
-                </ul>
-            ) : (
-                <p>No couriers found</p>
-            )}
-        </div>
-    );
+                  </select>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
 };
 
 export default AssignOrders;
