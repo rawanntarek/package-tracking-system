@@ -25,7 +25,6 @@ const AssignOrders = () => {
 
   // Fetch couriers (you can replace this with a real API call)
   const fetchCouriers = async () => {
-    // Assuming couriers are fetched from another API
     try {
       const response = await fetch('http://localhost:8080/getAllCouriers'); // Replace with your API URL
       const data = await response.json();
@@ -68,11 +67,10 @@ const AssignOrders = () => {
             <tr>
               <th>Order ID</th>
               <th>Status</th>
-              <th>courierID</th>
-              <th>courierName</th>
-              <th>courierPhone</th>
-              <th>ReAssign Courier</th>
-
+              <th>Courier ID</th>
+              <th>Courier Name</th>
+              <th>Courier Phone</th>
+              <th>Assign Courier</th>
             </tr>
           </thead>
           <tbody>
@@ -80,11 +78,10 @@ const AssignOrders = () => {
               <tr key={order._id}>
                 <td>{order.id}</td>
                 <td>{order.status}</td>
-                <td>{order.courierID}</td>
-                <td>{order.courierName}</td>
-                <td>{order.courierPhone}</td>
+                <td>{order.courierID || "N/A"}</td> {/* Display N/A if no courier is assigned */}
+                <td>{order.courierName || "N/A"}</td> {/* Display N/A if no courier is assigned */}
+                <td>{order.courierPhone || "N/A"}</td> {/* Display N/A if no phone is available */}
                 
-
                 <td>
                   <select
                     onChange={(e) => handleAssignOrder(order._id, e.target.value)}
@@ -93,7 +90,7 @@ const AssignOrders = () => {
                     <option value="" disabled>Select Courier</option>
                     {couriers.map((courier) => (
                       <option key={courier.id} value={courier.id}>
-                        {courier.name}
+                        {courier.type_of_user} {/* Display courier name */}
                       </option>
                     ))}
                   </select>
