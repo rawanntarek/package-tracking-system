@@ -49,7 +49,7 @@ func ErrorResponse(w http.ResponseWriter, message string, statusCode int) {
 // CORS middleware to handle cross-origin requests
 func enableCORS(w http.ResponseWriter) {
 	w.Header().Set("Access-Control-Allow-Origin", "*") // Allow all origins (be cautious in production)
-	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, status,email,id,orderID,courierID")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, name,courierName,status,email,id,orderID,courierID")
 	w.Header().Set("Access-Control-Allow-Methods", "PUT,DELETE,GET ,POST, OPTIONS") // Include OPTIONS for preflight requests
 }
 
@@ -697,6 +697,49 @@ func GetAllCouriers(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(couriers)
 }
+func AssignOrder(w http.ResponseWriter, r *http.Request) {
+	enableCORS(w)
+
+	if r.Method == http.MethodOptions {
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+	OrderID := r.Header.Get("orderID")
+	CourierName := r.Header.Get("courierName")
+
+	oid, err := primitive.ObjectIDFromHex(OrderID)
+	if err != nil {
+		http.Error(w, "Invalid order ID format", http.StatusBadRequest)
+		return
+	}
+	usersCollection := client.Database("Package_Tracking_System").Collection("Registered Users")
+	ordersCollection := client.Database("Package_Tracking_System").Collection("Orders")
+
+	// Find the courier by name
+	var courier UserData
+	if err := usersCollection.FindOne(context.TODO(), bson.M{"name": CourierName}).Decode(&courier); err != nil {
+		http.Error(w, "Courier not found", http.StatusNotFound)
+		return
+	}
+
+	// Update the order with the courier's details
+	update := bson.M{
+		"$set": bson.M{
+			"courierID":    courier.ID.Hex(),
+			"courierName":  courier.Name,
+			"courierPhone": courier.Phone,
+		},
+	}
+	log.Printf("Updating order with ID: %s", OrderID)
+	log.Printf("Update data: %+v", update)
+	if _, err := ordersCollection.UpdateOne(context.TODO(), bson.M{"_id": oid}, update); err != nil {
+		http.Error(w, "Failed to update order", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("Order assigned successfully"))
+}
 
 func main() {
 	// MongoDB URI
@@ -731,6 +774,8 @@ func main() {
 	http.HandleFunc("/updateorderstatus", UpdateOrderStatus)
 	http.HandleFunc("/ChangeStatus", ChangeStatus)
 	http.HandleFunc("/getAllCouriers", GetAllCouriers)
+	http.HandleFunc("/assignorder", AssignOrder)
+
 	fmt.Printf("Server is running on port %s\n", port)
 	log.Fatal(http.ListenAndServe(port, nil)) // Start the server and log fatal errors
 
