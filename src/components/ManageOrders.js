@@ -41,7 +41,7 @@ function ManageOrders() {
       });
 
       if (response.ok) {
-        console.log('Order deleted successfully');
+        alert('Order deleted successfully');
         setOrders(orders.filter((order) => order._id !== orderId));
       } else {
         console.error('Failed to delete order:', await response.text());
