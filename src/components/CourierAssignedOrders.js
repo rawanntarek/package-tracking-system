@@ -95,9 +95,9 @@ function CourierAssignedOrders() {
                 defaultValue={order.status} 
                 onChange={(e) => updateOrderStatus(order.id, e.target.value)} 
                 > 
-                <option value="Select status" disabled selected>select status</option>
-                <option value="picked Up">picked Up</option>
+                <option value="" disabled selected>select status</option>
                 <option value="in_transit">In Transit</option>
+                <option value="picked Up">picked Up</option>
                  <option value="delivered">Delivered</option>
                  </select>
               </div>

@@ -8,7 +8,7 @@ function CourierDashboard() {
   useEffect(() => {
     async function fetchOrders() {
       try {
-        const response = await fetch('http://localhost:3000/getallorders', {
+        const response = await fetch('http://localhost:3000/getallorderscourier', {
           method: 'GET',
         });
 

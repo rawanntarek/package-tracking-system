@@ -38,7 +38,6 @@ type Order struct {
 	CourierPhone    string             `json:"courierPhone"`
 }
 
-
 // Global MongoDB client
 var client *mongo.Client
 
@@ -255,6 +254,30 @@ func GetAllOrders(w http.ResponseWriter, r *http.Request) {
 
 	// Fetch all orders without any filter
 	cursor, err := collection.Find(context.TODO(), bson.M{})
+	if err != nil {
+		http.Error(w, "Failed to fetch orders", http.StatusInternalServerError)
+		return
+	}
+
+	var orders []Order
+	if err := cursor.All(context.TODO(), &orders); err != nil {
+		http.Error(w, "Error processing orders", http.StatusInternalServerError)
+		return
+	}
+
+	// Send the orders as a JSON response
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(orders)
+}
+func GetAllOrdersCourier(w http.ResponseWriter, r *http.Request) {
+	enableCORS(w)
+
+	log.Printf("Received %s request for %s", r.Method, r.URL.Path)
+
+	collection := client.Database("Package_Tracking_System").Collection("Orders")
+
+	// Fetch orders where the 'status' field is 'pending'
+	cursor, err := collection.Find(context.TODO(), bson.M{"status": "pending"})
 	if err != nil {
 		http.Error(w, "Failed to fetch orders", http.StatusInternalServerError)
 		return
@@ -647,33 +670,33 @@ func ChangeStatus(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("Order status updated successfully"))
 }
+
 // GetAllCouriers - Fetches all users of type 'Courier' from the database
 func GetAllCouriers(w http.ResponseWriter, r *http.Request) {
-    enableCORS(w)
+	enableCORS(w)
 
-    log.Printf("Received %s request for %s", r.Method, r.URL.Path)
+	log.Printf("Received %s request for %s", r.Method, r.URL.Path)
 
-    // Access the MongoDB collection
-    collection := client.Database("Package_Tracking_System").Collection("Registered Users")
+	// Access the MongoDB collection
+	collection := client.Database("Package_Tracking_System").Collection("Registered Users")
 
-    // Filter users where the 'Type_of_user' field is 'Courier'
-    cursor, err := collection.Find(context.TODO(), bson.M{"Type_of_user": "Courier"})
-    if err != nil {
-        http.Error(w, "Failed to fetch couriers", http.StatusInternalServerError)
-        return
-    }
+	// Filter users where the 'Type_of_user' field is 'Courier'
+	cursor, err := collection.Find(context.TODO(), bson.M{"type_of_user": "Courier"})
+	if err != nil {
+		http.Error(w, "Failed to fetch couriers", http.StatusInternalServerError)
+		return
+	}
 
-    var couriers []UserData
-    if err := cursor.All(context.TODO(), &couriers); err != nil {
-        http.Error(w, "Error processing couriers", http.StatusInternalServerError)
-        return
-    }
+	var couriers []UserData
+	if err := cursor.All(context.TODO(), &couriers); err != nil {
+		http.Error(w, "Error processing couriers", http.StatusInternalServerError)
+		return
+	}
 
-    // Send the filtered couriers as a JSON response
-    w.Header().Set("Content-Type", "application/json")
-    json.NewEncoder(w).Encode(couriers)
+	// Send the filtered couriers as a JSON response
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(couriers)
 }
-
 
 func main() {
 	// MongoDB URI
@@ -697,6 +720,7 @@ func main() {
 	http.HandleFunc("/createorder", CreateOrder)
 	http.HandleFunc("/getuserorders", GetUserOrders)
 	http.HandleFunc("/getallorders", GetAllOrders)
+	http.HandleFunc("/getallorderscourier", GetAllOrdersCourier)
 
 	http.HandleFunc("/getorder", GetOrderById)
 	http.HandleFunc("/cancelorder", CancelOrder)
